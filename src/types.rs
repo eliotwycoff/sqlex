@@ -62,7 +62,7 @@ impl Serialize for Column {
     {
         let mut state = serializer.serialize_struct("Column", 2)?;
         state.serialize_field("name", &self.name)?;
-        state.serialize_field("type_", &self.type_)?;
+        state.serialize_field("type", &self.type_)?;
         state.end()
     }
 }
