@@ -1,8 +1,5 @@
-use extractsql::{parse_sql, simple_parse};
-
-use std::{fs, path::Path};
+use extractsql::cmd::{self};
 
 fn main() {
-    let res = simple_parse(Path::new("./sql/small.sql"));
-    println!("res: {:#?}", res);
+    cmd::exec();
 }
