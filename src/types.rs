@@ -6,6 +6,12 @@ use serde::Serializer;
 use sql_parse::Type;
 
 #[derive(Clone, Debug, Serialize)]
+pub struct Database {
+    pub name: String,
+    pub tables: Vec<Table>,
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct Table {
     pub name: String,
     pub columns: Vec<Column>,
