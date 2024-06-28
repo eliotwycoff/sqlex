@@ -18,7 +18,7 @@ This will output a json file with the schema of the database and run `sqlex`.
 
 ```bash
 brew install sqlex
-```bas
+```
 
 Or via homebrew tap:
 
