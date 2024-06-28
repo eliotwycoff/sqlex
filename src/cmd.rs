@@ -14,9 +14,7 @@ Extract SQL from a text file
 Usage:
 --sql-file <sql_file>
 
-Hint: extract columns with the word 'pass' using `jq`:
-
-sqlex --sql-file ./schema_dump.sql | jq '{DEFAULT_JSON_FILTER}'
+--query <query>
 "))]
 pub struct Args {
     #[arg(short, long)]
@@ -51,6 +49,7 @@ pub fn exec() {
 struct Result {
     db_name: String,
     table_name: String,
+    column_name: String,
 }
 
 fn find_pass_columns(databases: &Vec<Database>, query_str: &str) -> Vec<Result> {
@@ -68,6 +67,7 @@ fn find_pass_columns(databases: &Vec<Database>, query_str: &str) -> Vec<Result> 
                     result.push(Result {
                         db_name: db_name.clone(),
                         table_name: table.name.clone(),
+                        column_name: column.name.clone(),
                     });
                     break; // Move to the next table after finding the first matching column
                 }
