@@ -16,7 +16,7 @@ Usage:
 
 Hint: extract columns with the word 'pass' using `jq`:
 
-extract --sql-file ./schema_dump.sql | jq '{DEFAULT_JSON_FILTER}'
+sqlex --sql-file ./schema_dump.sql | jq '{DEFAULT_JSON_FILTER}'
 "))]
 pub struct Args {
     #[arg(short, long)]
