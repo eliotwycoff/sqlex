@@ -228,7 +228,7 @@ checksum = "1e3aa48abce6b9689fba745b56f039a5ca2439c5ab51003b68f6234bac3f91d5"
 
 [[package]]
 name = "sqlex"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "anyhow",
  "clap",

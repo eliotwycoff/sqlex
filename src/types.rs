@@ -7,7 +7,7 @@ use sql_parse::Type;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Database {
-    pub name: String,
+    pub db_name: String,
     pub tables: Vec<Table>,
 }
 

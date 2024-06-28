@@ -45,7 +45,7 @@ pub fn simple_parse(code_path: &Path) -> ExtractResult<Vec<Database>> {
                     }
                 }
                 databases.push(Database {
-                    name: current_db_name.clone(),
+                    db_name: current_db_name.clone(),
                     tables,
                 });
 
@@ -75,7 +75,7 @@ pub fn simple_parse(code_path: &Path) -> ExtractResult<Vec<Database>> {
             }
         }
         databases.push(Database {
-            name: current_db_name,
+            db_name: current_db_name,
             tables,
         });
     }
@@ -130,7 +130,7 @@ pub fn simple_parse(code_path: &Path) -> ExtractResult<Vec<Database>> {
 pub fn to_json(databases: Vec<Database>) -> serde_json::Value {
     let mut json: HashMap<String, Database> = HashMap::new();
     for database in databases {
-        json.insert(database.name.clone(), database);
+        json.insert(database.db_name.clone(), database);
     }
     serde_json::to_value(json).unwrap()
 }
