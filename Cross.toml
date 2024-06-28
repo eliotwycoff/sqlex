@@ -1,0 +1,9 @@
+[build]
+build-std = true
+default-target = "x86_64-unknown-linux-musl"
+dockerfile = "./Dockerfile"
+
+
+[profile.release]
+lto = true
+opt-level = "z"
