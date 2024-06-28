@@ -36,12 +36,12 @@ pub fn simple_parse(code_path: &Path) -> ExtractResult<Vec<Table>> {
     Ok(tables)
 }
 
-pub fn to_json(tables: Vec<Table>) -> String {
+pub fn to_json(tables: Vec<Table>) -> serde_json::Value {
     let mut json: HashMap<String, Table> = HashMap::new();
     for table in tables {
         json.insert(table.name.clone(), table);
     }
-    serde_json::to_string(&json).unwrap()
+    serde_json::to_value(json).unwrap()
 }
 
 fn parse_create_table(create_table: &CreateTable) -> Table {
@@ -52,6 +52,7 @@ fn parse_create_table(create_table: &CreateTable) -> Table {
     Table {
         name: table_name,
         columns: table_columns.clone(),
+        constraints: None,
     }
 }
 

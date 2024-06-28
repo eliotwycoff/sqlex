@@ -9,6 +9,7 @@ use sql_parse::Type;
 pub struct Table {
     pub name: String,
     pub columns: Vec<Column>,
+    pub constraints: Option<Vec<Constraint>>,
 }
 
 impl Table {
@@ -79,4 +80,9 @@ impl<'a> From<Type<'a>> for ColumnType {
             _ => ColumnType::String,
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Constraint {
+    pub name: String,
 }

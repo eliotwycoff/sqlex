@@ -1,4 +1,4 @@
-use extractsql::cmd::{self};
+use sqlex::cmd::{self};
 
 fn main() {
     cmd::exec();

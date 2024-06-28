@@ -1,36 +1,26 @@
 use std::path::Path;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 use crate::{simple_parse, sqlparse::to_json};
 
-static DEFAULT_JSON_FILTER: &str = r#"
-    to_entries | map({table: .key, columns: .value.columns | map(select(.name | test("pass"; "i")))}) | map(select(.columns | length > 0))
-"#;
+#[allow(unused)]
+static DEFAULT_JSON_FILTER: &str = r#"to_entries | map({table: .key, columns: .value.columns | map(select(.name | test("pass"; "i")))}) | map(select(.columns | length > 0))"#;
 
 #[derive(Parser)]
 #[command(about = format!("
 Extract SQL from a text file
 
 Usage:
-sql2json <sql_file> [--dump]
+--sql-file <sql_file>
 
-Hint, use the following filter to find columns that contain the word 'pass'
+Hint: extract columns with the word 'pass' using `jq`:
 
-{DEFAULT_JSON_FILTER}
+extract --sql-file ./schema_dump.sql | jq '{DEFAULT_JSON_FILTER}'
 "))]
 pub struct Args {
     #[arg(short, long)]
     pub sql_file: String,
-
-    #[command(subcommand)]
-    pub command: Command,
-}
-
-#[derive(Subcommand)]
-pub enum Command {
-    #[command(about = "Dump json to stdout", alias = "d", alias = "dump")]
-    DumpJson,
 }
 
 pub fn exec() {
@@ -42,11 +32,7 @@ pub fn exec() {
         std::process::exit(1);
     }
     let res = simple_parse(sqlfile_path).expect("unable to load input file");
-    let input = to_json(res);
+    let input = to_json(res.clone());
 
-    match args.command {
-        Command::DumpJson => {
-            println!("{}", input);
-        }
-    }
+    println!("{}", input.to_string());
 }
