@@ -1,12 +1,19 @@
 [package]
 name = "sqlex"
-version = "0.1.7"
+authors = ['Ari Lerner <me@ari.io>']
+version = "0.1.8"
 edition = "2021"
 readme = "README.md"
 license = "MIT"
 repository = "https://github.com/auser/sqlex"
 description = "A tool to extract tables from a sql dump and run sql queries on them"
 homepage = "https://github.com/auser/sqlex"
+
+[package.metadata.wix]
+upgrade-guid = "606DFD57-362C-4E34-80E6-3938AE57B22F"
+path-guid = "330D35B9-B6C8-436C-A0B6-5AB29575E85A"
+license = false
+eula = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -36,7 +43,7 @@ cargo-dist-version = "0.17.0"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
-installers = ["shell", "npm", "homebrew"]
+installers = ["shell", "powershell", "homebrew", "msi"]
 # A GitHub repo to push Homebrew formulas to
 tap = "auser/homebrew-tap"
 # Target platforms to build apps for (Rust target-triple syntax)
@@ -44,6 +51,7 @@ targets = [
     "aarch64-apple-darwin",
     "x86_64-apple-darwin",
     "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
     "x86_64-pc-windows-msvc",
 ]
 # Publish jobs to run in CI
