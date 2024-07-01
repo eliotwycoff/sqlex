@@ -83,50 +83,6 @@ pub fn simple_parse(code_path: &Path) -> ExtractResult<Vec<Database>> {
     Ok(databases)
 }
 
-// pub fn simple_parse(code_path: &Path) -> ExtractResult<Vec<Database>> {
-//     let options = ParseOptions::new()
-//         .dialect(SQLDialect::MariaDB)
-//         .arguments(sql_parse::SQLArguments::QuestionMark)
-//         .warn_unquoted_identifiers(true);
-
-//     let mut issues = Vec::new();
-
-//     let sql_dump = std::fs::read_to_string(code_path).expect("unable to read sql dump");
-
-//     // Regex to capture the `USE` statement and the database name
-//     let db_regex = Regex::new(r"USE `([^`]+)`;").unwrap();
-//     // Split by `USE` while retaining the delimiters
-//     let db_stmts: Vec<&str> = sql_dump.split("USE").collect();
-
-//     let mut databases = Vec::new();
-//     for db_chunk in db_stmts {
-//         println!("captures: {:?}", db_chunk);
-//         if let Some(captures) = db_regex.captures(db_chunk) {
-//             let db_name = captures.get(1).unwrap().as_str();
-
-//             let db_content = &db_chunk[captures.get(0).unwrap().end()..];
-
-//             let ast = parse_statements(&db_content, &mut issues, &options);
-//             let mut tables = Vec::new();
-//             for node in ast.iter() {
-//                 match node {
-//                     Statement::CreateTable(create_table) => {
-//                         let tbl = parse_create_table(create_table);
-//                         tables.push(tbl.clone());
-//                     }
-//                     _ => {}
-//                 }
-//             }
-//             databases.push(Database {
-//                 name: db_name.to_string(),
-//                 tables,
-//             });
-//         }
-//     }
-
-//     Ok(databases)
-// }
-
 pub fn to_json(databases: Vec<Database>) -> serde_json::Value {
     let mut json: HashMap<String, Database> = HashMap::new();
     for database in databases {
@@ -176,22 +132,4 @@ fn extract_column_definition(definition: &CreateDefinition) -> ExtractResult<Opt
         }
         CreateDefinition::ConstraintDefinition { .. } => Ok(None),
     }
-    // if let CreateDefinition::ColumnDefinition {
-    //     identifier,
-    //     data_type,
-    // } = definition
-    // {
-    //     let type_ = ColumnType::from(data_type.type_.clone());
-    //     let column = Column {
-    //         name: identifier.value.to_string(),
-    //         type_,
-    //     };
-    //     Ok(column.clone())
-    // } else {
-    //     println!("Error occurred: {:?}", definition);
-    //     Err(Box::new(std::io::Error::new(
-    //         std::io::ErrorKind::InvalidInput,
-    //         "unable to parse column definition",
-    //     )))
-    // }
 }

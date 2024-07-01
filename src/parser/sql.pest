@@ -1,0 +1,177 @@
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+COMMENT = _{ ("--" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) | ("/*" ~ (!"*/" ~ ANY)* ~ "*/") }
+
+identifier = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+quoted_identifier = @{ "`" ~ (!("`" | NEWLINE) ~ ANY)* ~ "`" }
+string_literal = @{ "'" ~ (!"'" ~ ANY | "\\'")* ~ "'" }
+comma = _{ "," }
+if_exists = _{ ^"IF" ~ ^"EXISTS" }
+if_not_exists = _{ ^"IF" ~ ^"NOT" ~ ^"EXISTS" }
+
+create_database = {
+    ^"CREATE" ~ ^"DATABASE" ~ quoted_identifier ~
+    (^"DEFAULT" ~ ^"CHARACTER" ~ ^"SET" ~ identifier ~ ^"COLLATE" ~ identifier)?
+}
+
+use_database = { ^"USE" ~ quoted_identifier }
+
+create_table = {
+    ^"CREATE" ~ ^"TABLE" ~ if_not_exists? ~ quoted_identifier ~ "(" ~
+    table_element+ ~
+    ")" ~ table_options?
+}
+
+table_options = {
+    (table_option ~ ("" ~ table_option)*)?
+}
+
+
+table_option = {
+    ^"ENGINE" ~ "=" ~ identifier |
+    ^"DEFAULT" ~ ^"CHARSET" ~ "=" ~ identifier |
+    ^"COLLATE" ~ "=" ~ identifier |
+    ^"AUTO_INCREMENT" ~ "=" ~ number
+}
+
+
+table_element = _{
+    column_definition |
+    index_definition
+}
+
+column_definition = {
+    quoted_identifier ~ data_type ~ column_constraint* ~ comma?
+}
+
+index_definition = {
+    (^"PRIMARY" ~ ^"KEY" | ^"UNIQUE" ~ ^"KEY"? | ^"KEY") ~
+    (quoted_identifier)? ~ "(" ~ quoted_identifier ~ ("," ~ quoted_identifier)* ~ ")"
+}
+
+column_constraint = {
+    ^"UNSIGNED" |
+    ^"NOT" ~ ^"NULL" |
+    ^"NULL" |
+    ^"DEFAULT" ~ (string_literal | number | ^"NULL") |
+    ^"AUTO_INCREMENT" |
+    ^"UNIQUE" |
+    ^"PRIMARY" ~ ^"KEY"
+}
+
+
+table_element_list = {
+    (column_definition | index_definition) ~
+    ("," ~ (column_definition | index_definition))*
+}
+
+data_type = {
+    ((^"TINYINT" | ^"SMALLINT" | ^"MEDIUMINT" | ^"INT" | ^"INTEGER" | ^"BIGINT") ~ ("(" ~ number ~ ")")?) |
+    ((^"DECIMAL" | ^"NUMERIC" | ^"FLOAT" | ^"DOUBLE") ~ ("(" ~ number ~ ("," ~ number)? ~ ")")?) |
+    (^"BIT" ~ ("(" ~ number ~ ")")?) |
+    ^"DATE" |
+    ((^"DATETIME" | ^"TIMESTAMP" | ^"TIME") ~ ("(" ~ number ~ ")")?) |
+    (^"YEAR" ~ ("(" ~ number ~ ")")?) |
+    ((^"CHAR" | ^"VARCHAR") ~ "(" ~ number ~ ")") |
+    ((^"BINARY" | ^"VARBINARY") ~ "(" ~ number ~ ")") |
+    (^"TINYBLOB" | ^"BLOB" | ^"MEDIUMBLOB" | ^"LONGBLOB") |
+    (^"TINYTEXT" | ^"TEXT" | ^"MEDIUMTEXT" | ^"LONGTEXT") |
+    (^"ENUM" ~ "(" ~ string_literal ~ ("," ~ string_literal)* ~ ")") |
+    (^"SET" ~ "(" ~ string_literal ~ ("," ~ string_literal)* ~ ")") |
+    (^"GEOMETRY" | ^"POINT" | ^"LINESTRING" | ^"POLYGON" | ^"MULTIPOINT" | ^"MULTILINESTRING" | ^"MULTIPOLYGON" | ^"GEOMETRYCOLLECTION") |
+    ^"JSON"
+}
+
+alter_table = {
+    ^"ALTER" ~ ^"TABLE" ~ quoted_identifier ~
+    alter_specification ~ ("," ~ alter_specification)*
+}
+
+alter_specification = {
+    ^"ADD" ~ (^"COLUMN")? ~ column_definition |
+    ^"MODIFY" ~ (^"COLUMN")? ~ column_definition |
+    ^"DROP" ~ (^"COLUMN")? ~ quoted_identifier |
+    ^"ADD" ~ index_definition |
+    ^"DROP" ~ ^"INDEX" ~ quoted_identifier
+}
+
+drop_table = {
+    ^"DROP" ~ ^"TABLE" ~ if_exists? ~ quoted_identifier
+}
+
+set_statement = {
+    ^"SET" ~ (identifier | "@" ~ identifier) ~ "=" ~ (string_literal | number | identifier)
+}
+
+columns = {
+    quoted_identifier ~ ("," ~ quoted_identifier)*
+}
+
+insert_statement = {
+    ^"INSERT" ~ ^"INTO" ~ quoted_identifier ~
+    ("(" ~ columns ~ ")")? ~
+    ^"VALUES" ~ insert_values_list
+}
+
+insert_values_list = {
+    "(" ~ insert_value ~ ("," ~ insert_value)* ~ ")" ~
+    ("," ~ "(" ~ insert_value ~ ("," ~ insert_value)* ~ ")")*
+}
+
+insert_value = { string_literal | number | ^"NULL" | identifier }
+
+update_statement = {
+    ^"UPDATE" ~ quoted_identifier ~
+    ^"SET" ~ set_clause ~ ("," ~ set_clause)* ~
+    where_clause?
+}
+
+set_clause = {
+    quoted_identifier ~ "=" ~ (string_literal | number | ^"NULL" | identifier)
+}
+
+delete_statement = {
+    ^"DELETE" ~ ^"FROM" ~ quoted_identifier ~
+    where_clause?
+}
+
+where_clause = {
+    ^"WHERE" ~ condition
+}
+
+condition = {
+    (quoted_identifier | identifier) ~ comparison_operator ~ (string_literal | number | ^"NULL" | identifier) ~
+    (logical_operator ~ condition)*
+}
+
+comparison_operator = { "=" | "!=" | "<>" | "<" | ">" | "<=" | ">=" | ^"LIKE" | ^"IN" | ^"IS" ~ ^"NULL" | ^"IS" ~ ^"NOT" ~ ^"NULL" }
+logical_operator = { ^"AND" | ^"OR" }
+
+number = @{
+    "-"? ~ (
+        "0x" ~ ASCII_HEX_DIGIT+ |
+        "0b" ~ ASCII_BIN_DIGIT+ |
+        ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)?
+    )
+}
+
+
+statement = _{
+    create_database |
+    use_database |
+    create_table |
+    alter_table |
+    drop_table |
+    insert_statement |
+    update_statement |
+    delete_statement |
+    set_statement
+}
+
+sql_statement = { statement ~ ";" }
+
+mysqldump = {
+    SOI ~
+    (sql_statement | COMMENT)* ~
+    EOI
+}
+

@@ -92,3 +92,9 @@ impl<'a> From<Type<'a>> for ColumnType {
 pub struct Constraint {
     pub name: String,
 }
+
+#[derive(Clone, Debug, Serialize)]
+pub struct TableInsertReplace {
+    pub columns: Vec<String>,
+    pub values: Vec<String>,
+}

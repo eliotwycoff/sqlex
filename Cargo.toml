@@ -20,10 +20,23 @@ eula = false
 [dependencies]
 anyhow = "1.0.86"
 clap = { version = "4.5.7", features = ["derive"] }
+config = "0.14.0"
+fakeit = "1.2.0"
+lazy_static = "1.5.0"
+paste = "1.0.15"
+pest = "2.7.10"
+pest_derive = "2.7.10"
+rayon = "1.10.0"
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.118"
+sql-insight = "0.1.1"
 sql-parse = "0.20.0"
+sql-script-parser = "0.1.2"
+uuid = { version = "1.9.1", features = ["v4"] }
+
+[dev-dependencies]
+tempfile = "3.10.1"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
