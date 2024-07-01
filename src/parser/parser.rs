@@ -87,7 +87,7 @@ impl MyParser {
                             }
                             Rule::create_table => {
                                 if let Some(ref mut db) = current_database {
-                                    let table = parse_create_table(db, inner_pair);
+                                    let table = parse_create_table(inner_pair);
                                     db.tables.insert(table.name.clone(), table);
                                 }
                             }
@@ -167,7 +167,7 @@ impl MyParser {
     }
 }
 
-fn parse_create_table(db: &mut Database, pair: pest::iterators::Pair<Rule>) -> Table {
+fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
     let mut inner = pair.into_inner();
     let table_name = inner
         .next()
@@ -175,7 +175,7 @@ fn parse_create_table(db: &mut Database, pair: pest::iterators::Pair<Rule>) -> T
         .as_str()
         .trim_matches('`')
         .to_string();
-    let mut table = Table::new(db.name.clone(), table_name);
+    let mut table = Table::new(table_name);
 
     for element in inner {
         match element.as_rule() {
