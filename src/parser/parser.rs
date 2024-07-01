@@ -45,17 +45,17 @@ impl MyParser {
 
     pub fn parse_mysqldump(mut self, input: &str) -> ExtractResult<Self> {
         let mut parse_result =
-            MySQLDumpParser::parse(Rule::mysqldump, input).expect("invalid input");
+            MySQLDumpParser::parse(Rule::MYSQL_DUMP, input).expect("invalid input");
         let mysqldump = parse_result.next().expect("invalid input");
 
         let mut current_database: Option<Database> = self.current_database.clone();
 
         for pair in mysqldump.into_inner() {
             match pair.as_rule() {
-                Rule::sql_statement => {
+                Rule::SQL_STATEMENT => {
                     for inner_pair in pair.into_inner() {
                         match inner_pair.as_rule() {
-                            Rule::create_database => {
+                            Rule::CREATE_DATABASE => {
                                 let name = inner_pair
                                     .into_inner()
                                     .next()
@@ -70,7 +70,7 @@ impl MyParser {
                                 }
                                 current_database = Some(Database::new(name));
                             }
-                            Rule::use_database => {
+                            Rule::USE_DATABASE => {
                                 let name = inner_pair
                                     .into_inner()
                                     .next()
@@ -80,18 +80,18 @@ impl MyParser {
                                     .to_string();
                                 current_database = Some(Database::new(name.to_string()));
                             }
-                            Rule::create_table => {
+                            Rule::CREATE_TABLE => {
                                 if let Some(ref mut db) = current_database {
                                     let table = parse_create_table(inner_pair);
                                     db.tables.insert(table.name.clone(), table);
                                 }
                             }
-                            Rule::alter_table => {
+                            Rule::ALTER_TABLE => {
                                 if let Some(ref mut db) = current_database {
                                     parse_alter_table(inner_pair, db);
                                 }
                             }
-                            Rule::drop_table => {
+                            Rule::DROP_TABLE => {
                                 if let Some(ref mut db) = current_database {
                                     let table_name = inner_pair
                                         .clone() // Clone the pair here
@@ -104,7 +104,7 @@ impl MyParser {
                                     db.tables.remove(&table_name);
                                 }
                             }
-                            Rule::insert_statement => {
+                            Rule::INSERT_STATEMENT => {
                                 if let Some(ref mut db) = current_database {
                                     let mut inner = inner_pair.into_inner();
                                     let table_name = inner
@@ -118,7 +118,7 @@ impl MyParser {
                                     }
                                 }
                             }
-                            Rule::update_statement => {
+                            Rule::UPDATE_STATEMENT => {
                                 if let Some(ref mut db) = current_database {
                                     let update = parse_update_statement(inner_pair.into_inner());
                                     if let Some(table) = db.tables.get_mut(&update.table_name) {
@@ -126,7 +126,7 @@ impl MyParser {
                                     }
                                 }
                             }
-                            Rule::delete_statement => {
+                            Rule::DELETE_STATEMENT => {
                                 let delete = parse_delete_statement(inner_pair.into_inner());
                                 if let Some(ref mut db) = current_database {
                                     if let Some(table) = db.tables.get_mut(&delete.table_name) {
@@ -174,14 +174,14 @@ fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
 
     for element in inner {
         match element.as_rule() {
-            Rule::column_definition => {
+            Rule::COLUMN_DEFINITION => {
                 let column = parse_column_definition(element);
                 if column.name == *table.primary_key.as_ref().unwrap_or(&String::new()) {
                     table.primary_key = Some(column.name.clone());
                 }
                 table.columns.push(column);
             }
-            Rule::index_definition => {
+            Rule::INDEX_DEFINITION => {
                 let index = parse_index_definition(element);
                 if index.name == "PRIMARY" {
                     table.primary_key = Some(index.columns.first().unwrap().clone());
@@ -254,12 +254,12 @@ fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
     if let Some(table) = db.tables.get_mut(&table_name) {
         for alter_spec in inner {
             match alter_spec.as_rule() {
-                Rule::alter_specification => {
+                Rule::ALTER_SPECIFICATION => {
                     let mut spec_inner = alter_spec.into_inner();
                     let action = spec_inner.next().unwrap().as_str();
                     match action {
                         "ADD" => {
-                            if spec_inner.peek().unwrap().as_rule() == Rule::column_definition {
+                            if spec_inner.peek().unwrap().as_rule() == Rule::COLUMN_DEFINITION {
                                 let column = parse_column_definition(spec_inner.next().unwrap());
                                 table.columns.push(column);
                             } else {
