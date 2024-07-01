@@ -1,13 +1,13 @@
-use std::collections::HashMap;
-
-use crate::ExtractResult;
-use anyhow::Context;
-
-use super::parser_types::{
-    Column, DataType, Database, DatabaseOption, Delete, Index, Insert, Table, Update,
+use crate::{
+    parser::parser_types::{
+        Column, DataType, Database, DatabaseOption, Delete, Index, Insert, Table, Update,
+    },
+    ExtractResult,
 };
+use anyhow::Context;
 use pest::Parser;
 use pest_derive::Parser;
+use std::collections::HashMap;
 
 #[derive(Parser)]
 #[grammar = "parser/sql.pest"]
@@ -467,6 +467,7 @@ fn parse_data_type(pair: pest::iterators::Pair<Rule>) -> DataType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::Sql;
 
     #[test]
     fn test_create_database() {
@@ -509,10 +510,10 @@ mod tests {
             options.len()
         );
         assert_eq!(
-            options[0].to_string(),
+            options[0].as_sql(),
             "character_set_database = utf8",
             "Expected character_set_database to be utf8, got {}",
-            options[0].to_string()
+            options[0].as_sql(),
         );
     }
 
@@ -531,23 +532,27 @@ mod tests {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
         "#;
         let result = MyParser::with_parse(input).unwrap();
+
         assert_eq!(
             result.databases.len(),
             1,
             "Expected 1 database, got {}",
             result.databases.len()
         );
+
         let databases = result.get_databases();
         if !databases.is_empty() {
             assert_eq!(databases[0].name, "test_db", "Database name mismatch");
         }
         let db = databases[0].clone();
+
         assert_eq!(
             db.tables.len(),
             1,
             "Expected 1 table, got {}",
             db.tables.len()
         );
+
         if let Some(ref table) = db.tables.get("config") {
             assert_eq!(
                 table.columns.len(),

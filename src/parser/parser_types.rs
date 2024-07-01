@@ -1,7 +1,5 @@
-use std::{collections::HashMap, fmt::Display};
-
-use super::format_trait::SqlFormat;
-use crate::parser::parser::Rule;
+use crate::parser::{parser::Rule, Sql};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum DatabaseOption {
@@ -10,12 +8,12 @@ pub enum DatabaseOption {
     Encryption(String),
 }
 
-impl Display for DatabaseOption {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Sql for DatabaseOption {
+    fn as_sql(&self) -> String {
         match self {
-            DatabaseOption::CharacterSet(value) => write!(f, "character_set_database = {}", value),
-            DatabaseOption::Collate(value) => write!(f, "collate = {}", value),
-            DatabaseOption::Encryption(value) => write!(f, "encryption = {}", value),
+            DatabaseOption::CharacterSet(value) => format!("CHARACTER_SET {value}"),
+            DatabaseOption::Collate(value) => format!("COLLATE {value}"),
+            DatabaseOption::Encryption(value) => format!("ENCRYPTION {value}"),
         }
     }
 }
@@ -57,24 +55,61 @@ impl Database {
     }
 }
 
-impl SqlFormat for Database {
-    fn format_str(&self) -> String {
-        format!(r#"CREATE DATABASE IF NOT EXISTS {}"#, self.name)
-    }
-    fn format(&self) -> String {
-        "".to_string()
+impl Sql for Database {
+    fn as_sql(&self) -> String {
+        let options_sql = if self.options.is_empty() {
+            String::from("")
+        } else {
+            format!(
+                "DEFAULT {}",
+                self.options
+                    .iter()
+                    .map(|opt| opt.as_sql())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            )
+        };
+
+        let tables_sql = self
+            .tables
+            .values()
+            .map(|value| value.as_sql())
+            .collect::<Vec<String>>()
+            .join("\n\n");
+
+        format!(
+            r#"
+            --
+            -- Current Database: `{}`
+            --
+
+            CREATE DATABASE IF NOT EXISTS {} {};
+
+            USE `{}`;
+        
+            {}
+
+            "#,
+            self.name, self.name, options_sql, self.name, tables_sql,
+        )
     }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct Table {
+    // Table settings
     pub name: String,
     pub columns: Vec<Column>,
     pub primary_key: Option<String>,
     pub indexes: Vec<Index>,
+
+    // Table options
     pub engine: Option<String>,
+    pub auto_increment: Option<String>,
     pub charset: Option<String>,
-    pub collation: Option<String>,
+    pub collate: Option<String>,
+
+    // Row operations
     pub inserts: Vec<Insert>,
     pub updates: Vec<Update>,
     pub deletes: Vec<Delete>,
@@ -88,12 +123,38 @@ impl Table {
             primary_key: None,
             indexes: Vec::new(),
             engine: None,
+            auto_increment: None,
             charset: None,
-            collation: None,
+            collate: None,
             inserts: Vec::new(),
             updates: Vec::new(),
             deletes: Vec::new(),
         }
+    }
+}
+
+impl Sql for Table {
+    fn as_sql(&self) -> String {
+        // TODO: Finish this.
+        let engine = String::from("");
+        let auto_increment = String::from("");
+        let charset = String::from("");
+        let collate = String::from("");
+
+        // TODO: Finish this
+        format!(
+            r#"
+            --
+            -- Table structure for table `{}` 
+            --
+
+            DROP TABLE IF EXISTS `{}`;
+            CREATE TABLE `{}` (
+              -- TODO: FINISH THIS
+            ) {} {} {} {}
+            "#,
+            self.name, self.name, self.name, engine, auto_increment, charset, collate,
+        )
     }
 }
 
@@ -119,6 +180,13 @@ impl Column {
         }
     }
 }
+
+impl Sql for Column {
+    fn as_sql(&self) -> String {
+        todo!()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Index {
     pub name: String,
@@ -136,6 +204,12 @@ impl Index {
     }
 }
 
+impl Sql for Index {
+    fn as_sql(&self) -> String {
+        todo!()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Insert {
     pub columns: Vec<String>,
@@ -145,6 +219,12 @@ pub struct Insert {
 impl Insert {
     pub fn new(columns: Vec<String>, values: Vec<String>) -> Self {
         Self { columns, values }
+    }
+}
+
+impl Sql for Insert {
+    fn as_sql(&self) -> String {
+        todo!()
     }
 }
 
@@ -163,6 +243,12 @@ impl Update {
     }
 }
 
+impl Sql for Update {
+    fn as_sql(&self) -> String {
+        todo!()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Delete {
     pub table_name: String,
@@ -178,10 +264,22 @@ impl Delete {
     }
 }
 
+impl Sql for Delete {
+    fn as_sql(&self) -> String {
+        todo!()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Set {
     pub variable: String,
     pub value: String,
+}
+
+impl Sql for Set {
+    fn as_sql(&self) -> String {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -229,5 +327,11 @@ pub enum DataType {
 impl Default for DataType {
     fn default() -> Self {
         DataType::Varchar(None)
+    }
+}
+
+impl Sql for DataType {
+    fn as_sql(&self) -> String {
+        todo!()
     }
 }
