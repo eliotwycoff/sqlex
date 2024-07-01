@@ -5,7 +5,6 @@ use sql_parse::{parse_statements, Expression, ParseOptions, SQLDialect};
 use std::path::Path;
 
 use clap::Parser;
-use sql_script_parser::sql_script_parser;
 
 use crate::parser::parser::MyParser;
 use crate::rules::get_struct_by_name;

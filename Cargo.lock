@@ -876,12 +876,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e3aa48abce6b9689fba745b56f039a5ca2439c5ab51003b68f6234bac3f91d5"
 
 [[package]]
-name = "sql-script-parser"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "200ff8bf5cb548f0a5f899ed89bb699e29b5987925665efc336e81bd8efe4fd4"
-
-[[package]]
 name = "sqlex"
 version = "0.1.9"
 dependencies = [
@@ -899,7 +893,6 @@ dependencies = [
  "serde_json",
  "sql-insight",
  "sql-parse",
- "sql-script-parser",
  "tempfile",
  "uuid 1.9.1",
 ]

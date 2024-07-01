@@ -19,6 +19,7 @@ impl Database {
 
 #[derive(Debug, Clone, Default)]
 pub struct Table {
+    pub database_name: String,
     pub name: String,
     pub columns: Vec<Column>,
     pub primary_key: Option<String>,
@@ -32,8 +33,9 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(name: String) -> Self {
+    pub fn new(database_name: String, name: String) -> Self {
         Self {
+            database_name,
             name,
             columns: Vec::new(),
             primary_key: None,

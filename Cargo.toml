@@ -32,7 +32,6 @@ serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.118"
 sql-insight = "0.1.1"
 sql-parse = "0.20.0"
-sql-script-parser = "0.1.2"
 uuid = { version = "1.9.1", features = ["v4"] }
 
 [dev-dependencies]

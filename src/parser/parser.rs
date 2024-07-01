@@ -87,7 +87,7 @@ impl MyParser {
                             }
                             Rule::create_table => {
                                 if let Some(ref mut db) = current_database {
-                                    let table = parse_create_table(inner_pair);
+                                    let table = parse_create_table(db, inner_pair);
                                     db.tables.insert(table.name.clone(), table);
                                 }
                             }
@@ -167,7 +167,7 @@ impl MyParser {
     }
 }
 
-fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
+fn parse_create_table(db: &mut Database, pair: pest::iterators::Pair<Rule>) -> Table {
     let mut inner = pair.into_inner();
     let table_name = inner
         .next()
@@ -175,7 +175,7 @@ fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
         .as_str()
         .trim_matches('`')
         .to_string();
-    let mut table = Table::new(table_name);
+    let mut table = Table::new(db.name.clone(), table_name);
 
     for element in inner {
         match element.as_rule() {
@@ -617,7 +617,7 @@ mod tests {
     #[test]
     fn test_multiple_statements() {
         let input = r#"
-        INSERT INTO `users` (`name`) VALUES ('John Doe');
+        INSERT INTO `users` (`name`, `email`, `password`) VALUES ('John Doe', 'john.doe@example.com', 'password');
         UPDATE `users` SET `name` = 'Jane Doe' WHERE `id` = 1;
         DELETE FROM `users` WHERE `id` = 1;
         SET @last_id = 1;
@@ -631,6 +631,7 @@ mod tests {
         let table = db.tables.get("users").unwrap();
         assert_eq!(table.columns.len(), 4);
         assert_eq!(table.inserts.len(), 1);
+        println!("insert in multiple_Statements test: {:#?}", table.inserts);
         assert_eq!(table.updates.len(), 1);
         assert_eq!(table.deletes.len(), 1);
     }
@@ -694,3 +695,10 @@ mod tests {
         my_parser
     }
 }
+
+/*
+let dbs = my_parser.get_databases();
+let db = dbs.first();
+
+db.get_tables();
+*/
