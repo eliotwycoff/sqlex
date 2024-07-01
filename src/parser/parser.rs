@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use crate::ExtractResult;
 use anyhow::Context;
 
-use super::parser_types::{Column, DataType, Database, Delete, Index, Insert, Table, Update};
+use super::parser_types::{
+    Column, DataType, Database, DatabaseOption, Delete, Index, Insert, Table, Update,
+};
 use pest::Parser;
 use pest_derive::Parser;
 
@@ -61,19 +63,14 @@ impl MyParser {
                     for inner_pair in pair.into_inner() {
                         match inner_pair.as_rule() {
                             Rule::CREATE_DATABASE => {
-                                let name = inner_pair
-                                    .into_inner()
-                                    .next()
-                                    .expect("unable to unwrap create_database name")
-                                    .as_str()
-                                    .trim_matches('`')
-                                    .to_string();
+                                let database = parse_create_database(inner_pair);
+
                                 if let Some(db) = current_database.take() {
-                                    if db.name != name {
+                                    if db.name != database.name {
                                         self.insert_database(db);
                                     }
                                 }
-                                current_database = Some(Database::new(name));
+                                current_database = Some(database);
                             }
                             Rule::USE_DATABASE => {
                                 let name = inner_pair
@@ -165,6 +162,26 @@ impl MyParser {
     fn insert_database(&mut self, db: Database) {
         self.databases.insert(db.name.clone(), db);
     }
+}
+
+fn parse_create_database(pair: pest::iterators::Pair<Rule>) -> Database {
+    // let mut inner_pair = pair.into_inner().next().unwrap();
+    let mut inner_pair = pair.into_inner();
+    let name_pair = inner_pair.next();
+    let name = name_pair.unwrap().as_str().trim_matches('`').to_string();
+    let mut db = Database::new(name);
+    let option_pair = inner_pair.next();
+    if let Some(option) = option_pair {
+        let mut inner_options_pair = option.into_inner();
+        let mut options = Vec::new();
+        while let Some(option) = inner_options_pair.next() {
+            if let Some(db_option) = DatabaseOption::from_pair(option) {
+                options.push(db_option);
+            }
+        }
+        db.options = options;
+    }
+    db
 }
 
 fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
@@ -465,11 +482,38 @@ mod tests {
         if !databases.is_empty() {
             assert_eq!(databases[0].name, "test_db", "Database name mismatch");
             assert!(databases[0].tables.is_empty(), "Expected no tables");
-            assert!(
-                databases[0].set_variables.is_empty(),
-                "Expected no set variables"
-            );
+            println!("OPTS> {:?}", databases[0].options);
+            assert!(databases[0].options.len() == 0, "Expected no options");
         }
+    }
+
+    #[test]
+    fn test_create_database_with_constraints() {
+        let input =
+            "CREATE DATABASE `namedmanager` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;";
+        let result = MyParser::with_parse(input).unwrap();
+        assert_eq!(
+            result.databases.len(),
+            1,
+            "Expected 1 database, got {}",
+            result.databases.len()
+        );
+        let databases = result.get_databases();
+        let database = databases.first().unwrap();
+        assert!(database.options.len() == 2);
+        let options = &database.options;
+        assert_eq!(
+            options.len(),
+            2,
+            "Expected 2 set variables, got {}",
+            options.len()
+        );
+        assert_eq!(
+            options[0].to_string(),
+            "character_set_database = utf8",
+            "Expected character_set_database to be utf8, got {}",
+            options[0].to_string()
+        );
     }
 
     #[test]

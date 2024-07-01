@@ -1,10 +1,50 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
+
+use super::format_trait::SqlFormat;
+use crate::parser::parser::Rule;
+
+#[derive(Debug, Clone)]
+pub enum DatabaseOption {
+    CharacterSet(String),
+    Collate(String),
+    Encryption(String),
+}
+
+impl Display for DatabaseOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DatabaseOption::CharacterSet(value) => write!(f, "character_set_database = {}", value),
+            DatabaseOption::Collate(value) => write!(f, "collate = {}", value),
+            DatabaseOption::Encryption(value) => write!(f, "encryption = {}", value),
+        }
+    }
+}
+
+impl DatabaseOption {
+    pub fn from_pair(pair: pest::iterators::Pair<Rule>) -> Option<DatabaseOption> {
+        if let Some(inner_option) = pair.into_inner().next() {
+            let key = match inner_option.as_rule() {
+                Rule::CHARACTER_SET => DatabaseOption::CharacterSet,
+                Rule::COLLATE => DatabaseOption::Collate,
+                Rule::ENCRYPTION => DatabaseOption::Encryption,
+                _ => return None,
+            };
+            let value = match inner_option.into_inner().next() {
+                Some(value) => value.as_str().trim_matches('`').to_string(),
+                None => String::new(),
+            };
+            Some(key(value))
+        } else {
+            None
+        }
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct Database {
     pub name: String,
     pub tables: HashMap<String, Table>,
-    pub set_variables: HashMap<String, String>,
+    pub options: Vec<DatabaseOption>,
 }
 
 impl Database {
@@ -12,8 +52,17 @@ impl Database {
         Self {
             name,
             tables: HashMap::new(),
-            set_variables: HashMap::new(),
+            options: Vec::new(),
         }
+    }
+}
+
+impl SqlFormat for Database {
+    fn format_str(&self) -> String {
+        format!(r#"CREATE DATABASE IF NOT EXISTS {}"#, self.name)
+    }
+    fn format(&self) -> String {
+        "".to_string()
     }
 }
 
