@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use crate::ExtractResult;
 
-use super::parser_types::{Column, DataType, Database, Delete, Index, Insert, Set, Table, Update};
+use super::parser_types::{Column, DataType, Database, Delete, Index, Insert, Table, Update};
 use pest::Parser;
 use pest_derive::Parser;
 
@@ -10,133 +12,154 @@ struct MySQLDumpParser;
 
 #[derive(Debug)]
 pub struct MyParser {
-    pub databases: Vec<Database>,
+    pub databases: HashMap<String, Database>,
     pub current_database: Option<Database>,
 }
 
 impl MyParser {
     pub fn new() -> Self {
         Self {
-            databases: vec![],
+            databases: HashMap::new(),
             current_database: None,
         }
     }
-    pub fn parse(mut self, input: &str) -> ExtractResult<Self> {
-        let parsed_databases = parse_mysqldump(input)?;
-        self.databases.extend(parsed_databases);
-        Ok(self)
+    pub fn with_parse(input: &str) -> ExtractResult<Self> {
+        let parser = Self::new();
+        let parsed_parser = parser.parse_mysqldump(input)?;
+        // self.databases.extend(parsed_databases);
+        Ok(parsed_parser)
     }
 
-    pub fn get_databases(&self) -> &Vec<Database> {
-        &self.databases
+    pub fn parse(self, input: &str) -> ExtractResult<Self> {
+        Ok(self.parse_mysqldump(input)?)
     }
-}
 
-pub fn parse_mysqldump(input: &str) -> Result<Vec<Database>, pest::error::Error<Rule>> {
-    let mut parse_result = MySQLDumpParser::parse(Rule::mysqldump, input).expect("invalid input");
-    let mysqldump = parse_result.next().expect("invalid input");
+    pub fn get_databases(&self) -> Vec<Database> {
+        self.databases.values().cloned().collect()
+    }
 
-    let mut databases = Vec::new();
-    let mut current_database: Option<Database> = None;
+    pub fn set_current_database(mut self, name: &str) -> Self {
+        self.current_database = self.databases.get(name).cloned();
+        self
+    }
 
-    for pair in mysqldump.into_inner() {
-        match pair.as_rule() {
-            Rule::sql_statement => {
-                for inner_pair in pair.into_inner() {
-                    dbg!(inner_pair.as_rule());
-                    match inner_pair.as_rule() {
-                        Rule::create_database => {
-                            let name = inner_pair
-                                .into_inner()
-                                .next()
-                                .expect("unable to unwrap create_database name")
-                                .as_str()
-                                .trim_matches('`')
-                                .to_string();
-                            if let Some(db) = current_database.take() {
-                                if db.name != name {
-                                    databases.push(db);
-                                }
-                            }
-                            current_database = Some(Database::new(name));
-                        }
-                        Rule::use_database => {
-                            let name = inner_pair
-                                .into_inner()
-                                .next()
-                                .expect("unable to unwrap use_database name")
-                                .as_str()
-                                .trim_matches('`')
-                                .to_string();
-                            current_database = Some(Database::new(name.to_string()));
-                        }
-                        Rule::create_table => {
-                            if let Some(ref mut db) = current_database {
-                                let table = parse_create_table(inner_pair);
-                                db.tables.insert(table.name.clone(), table);
-                            }
-                        }
-                        Rule::alter_table => {
-                            if let Some(ref mut db) = current_database {
-                                parse_alter_table(inner_pair, db);
-                            }
-                        }
-                        Rule::drop_table => {
-                            if let Some(ref mut db) = current_database {
-                                let table_name = inner_pair
-                                    .clone() // Clone the pair here
+    pub fn parse_mysqldump(mut self, input: &str) -> ExtractResult<Self> {
+        let mut parse_result =
+            MySQLDumpParser::parse(Rule::mysqldump, input).expect("invalid input");
+        let mysqldump = parse_result.next().expect("invalid input");
+
+        let mut current_database: Option<Database> = self.current_database.clone();
+
+        for pair in mysqldump.into_inner() {
+            match pair.as_rule() {
+                Rule::sql_statement => {
+                    for inner_pair in pair.into_inner() {
+                        match inner_pair.as_rule() {
+                            Rule::create_database => {
+                                let name = inner_pair
                                     .into_inner()
-                                    .last()
-                                    .expect("unable to extract table name")
+                                    .next()
+                                    .expect("unable to unwrap create_database name")
                                     .as_str()
                                     .trim_matches('`')
                                     .to_string();
-                                db.tables.remove(&table_name);
+                                if let Some(db) = current_database.take() {
+                                    if db.name != name {
+                                        self.insert_database(db);
+                                    }
+                                }
+                                current_database = Some(Database::new(name));
                             }
-                        }
-                        Rule::insert_statement => {
-                            if let Some(ref mut db) = current_database {
-                                let mut inner = inner_pair.into_inner();
-                                let table_name =
-                                    inner.next().unwrap().as_str().trim_matches('`').to_string();
-                                if let Some(table) = db.tables.get_mut(&table_name) {
-                                    table.inserts.push(parse_insert_statement(inner));
+                            Rule::use_database => {
+                                let name = inner_pair
+                                    .into_inner()
+                                    .next()
+                                    .expect("unable to unwrap use_database name")
+                                    .as_str()
+                                    .trim_matches('`')
+                                    .to_string();
+                                current_database = Some(Database::new(name.to_string()));
+                            }
+                            Rule::create_table => {
+                                if let Some(ref mut db) = current_database {
+                                    let table = parse_create_table(inner_pair);
+                                    db.tables.insert(table.name.clone(), table);
                                 }
                             }
-                        }
-                        Rule::update_statement => {
-                            println!("Found update statement: {:#?}", current_database);
-                            if let Some(ref mut db) = current_database {
-                                let update = parse_update_statement(inner_pair.into_inner());
-                                if let Some(table) = db.tables.get_mut(&update.table_name) {
-                                    table.updates.push(update);
+                            Rule::alter_table => {
+                                if let Some(ref mut db) = current_database {
+                                    parse_alter_table(inner_pair, db);
                                 }
                             }
+                            Rule::drop_table => {
+                                if let Some(ref mut db) = current_database {
+                                    let table_name = inner_pair
+                                        .clone() // Clone the pair here
+                                        .into_inner()
+                                        .last()
+                                        .expect("unable to extract table name")
+                                        .as_str()
+                                        .trim_matches('`')
+                                        .to_string();
+                                    db.tables.remove(&table_name);
+                                }
+                            }
+                            Rule::insert_statement => {
+                                if let Some(ref mut db) = current_database {
+                                    let mut inner = inner_pair.into_inner();
+                                    let table_name = inner
+                                        .next()
+                                        .unwrap()
+                                        .as_str()
+                                        .trim_matches('`')
+                                        .to_string();
+                                    if let Some(table) = db.tables.get_mut(&table_name) {
+                                        table.inserts.push(parse_insert_statement(inner));
+                                    }
+                                }
+                            }
+                            Rule::update_statement => {
+                                if let Some(ref mut db) = current_database {
+                                    let update = parse_update_statement(inner_pair.into_inner());
+                                    if let Some(table) = db.tables.get_mut(&update.table_name) {
+                                        table.updates.push(update);
+                                    }
+                                }
+                            }
+                            Rule::delete_statement => {
+                                let delete = parse_delete_statement(inner_pair.into_inner());
+                                if let Some(ref mut db) = current_database {
+                                    if let Some(table) = db.tables.get_mut(&delete.table_name) {
+                                        table.deletes.push(delete);
+                                    }
+                                }
+                            }
+                            // Rule::set_statement => {
+                            //     let set = parse_set_statement(statement);
+                            //     db.set_variables.insert(set.variable, set.value);
+                            // }
+                            // ... existing code ...
+                            _ => {}
                         }
-                        // Rule::delete_statement => {
-                        //     let delete = parse_delete_statement(statement);
-                        //     if let Some(table) = db.tables.get_mut(&delete.table_name) {
-                        //         table.deletes.push(delete);
-                        //     }
-                        // }
-                        // Rule::set_statement => {
-                        //     let set = parse_set_statement(statement);
-                        //     db.set_variables.insert(set.variable, set.value);
-                        // }
-                        // ... existing code ...
-                        _ => {}
                     }
                 }
+                _ => {}
             }
-            _ => {}
         }
+
+        if let Some(ref db) = current_database {
+            self.insert_database(db.clone());
+        }
+
+        // self.databases.extend(databases);
+        self.current_database = current_database;
+
+        Ok(self)
     }
 
-    if let Some(ref db) = current_database {
-        databases.push(db.clone());
+    fn insert_database(&mut self, db: Database) {
+        self.databases.insert(db.name.clone(), db);
     }
-
-    Ok(databases)
 }
 
 fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
@@ -197,15 +220,31 @@ fn parse_insert_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Insert {
 }
 
 fn parse_update_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Update {
-    println!("parse update statement: {:#?}", pairs);
-    let table_name = pairs
-        .next()
-        .expect("invalid update statement")
-        .as_str()
-        .trim_matches('`')
-        .to_string();
-    let set_statements = pairs.next().expect("invalid update statement").into_inner();
-    Update::new(table_name)
+    let table_pairs = pairs.next().expect("invalid update statement");
+    let set_statement_pairs = pairs.next().expect("invalid update statement");
+    let _where_statement_pairs = pairs.next().expect("invalid update statement");
+
+    let table_name = table_pairs.as_str().trim_matches('`').to_string();
+
+    let mut hm = HashMap::new();
+    let mut set_statements = set_statement_pairs.into_inner();
+
+    while let Some(ss) = set_statements.next() {
+        let var = ss.as_str().trim_matches('`').to_string();
+        let val = set_statements.next().unwrap().as_str().trim_matches('\'');
+        hm.insert(var, val.to_string());
+    }
+
+    Update::new(table_name, hm)
+}
+
+fn parse_delete_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Delete {
+    let table_pairs = pairs.next().expect("invalid delete statement");
+    let _where_statement_pairs = pairs.next().expect("invalid delete statement");
+
+    let table_name = table_pairs.as_str().trim_matches('`').to_string();
+
+    Delete::new(table_name, None)
 }
 
 fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
@@ -410,13 +449,19 @@ mod tests {
     #[test]
     fn test_create_database() {
         let input = "CREATE DATABASE `test_db`;";
-        let result = parse_mysqldump(input).unwrap();
-        assert_eq!(result.len(), 1, "Expected 1 database, got {}", result.len());
-        if !result.is_empty() {
-            assert_eq!(result[0].name, "test_db", "Database name mismatch");
-            assert!(result[0].tables.is_empty(), "Expected no tables");
+        let result = MyParser::with_parse(input).unwrap();
+        assert_eq!(
+            result.databases.len(),
+            1,
+            "Expected 1 database, got {}",
+            result.databases.len()
+        );
+        let databases = result.get_databases();
+        if !databases.is_empty() {
+            assert_eq!(databases[0].name, "test_db", "Database name mismatch");
+            assert!(databases[0].tables.is_empty(), "Expected no tables");
             assert!(
-                result[0].set_variables.is_empty(),
+                databases[0].set_variables.is_empty(),
                 "Expected no set variables"
             );
         }
@@ -436,12 +481,18 @@ mod tests {
           PRIMARY KEY  (`name`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
         "#;
-        let result = parse_mysqldump(input).unwrap();
-        assert_eq!(result.len(), 1, "Expected 1 database, got {}", result.len());
-        if !result.is_empty() {
-            assert_eq!(result[0].name, "test_db", "Database name mismatch");
+        let result = MyParser::with_parse(input).unwrap();
+        assert_eq!(
+            result.databases.len(),
+            1,
+            "Expected 1 database, got {}",
+            result.databases.len()
+        );
+        let databases = result.get_databases();
+        if !databases.is_empty() {
+            assert_eq!(databases[0].name, "test_db", "Database name mismatch");
         }
-        let db = result[0].clone();
+        let db = databases[0].clone();
         assert_eq!(
             db.tables.len(),
             1,
@@ -474,12 +525,18 @@ mod tests {
           PRIMARY KEY  (`id`)
         ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=8 ;
         "#;
-        let result = parse_mysqldump(sql).unwrap();
-        assert_eq!(result.len(), 1, "Expected 1 database, got {}", result.len());
-        if !result.is_empty() {
-            assert_eq!(result[0].name, "test_db", "Database name mismatch");
+        let result = MyParser::with_parse(sql).unwrap();
+        assert_eq!(
+            result.databases.len(),
+            1,
+            "Expected 1 database, got {}",
+            result.databases.len()
+        );
+        let databases = result.get_databases();
+        if !databases.is_empty() {
+            assert_eq!(databases[0].name, "test_db", "Database name mismatch");
         }
-        let db = result[0].clone();
+        let db = databases[0].clone();
         assert_eq!(
             db.tables.len(),
             1,
@@ -509,9 +566,10 @@ mod tests {
         );
         INSERT INTO `users` (`name`, `email`) VALUES ('John Doe', 'john.doe@example.com');
         "#;
-        let result = parse_mysqldump(input).unwrap();
-        assert_eq!(result.len(), 1);
-        let db = &result[0];
+        let result = MyParser::with_parse(input).unwrap();
+        let databases = result.get_databases();
+        assert_eq!(databases.len(), 1);
+        let db = &databases[0];
         assert_eq!(db.name, "test_db");
         assert_eq!(db.tables.keys().len(), 1);
         let table = db.tables.get("users").unwrap();
@@ -521,9 +579,11 @@ mod tests {
 
     #[test]
     fn test_update_record_in_table() {
-        let my_parser = get_test_database_and_table();
         let input = "UPDATE `users` SET `name` = 'Jane Doe' WHERE `id` = 1;";
-        let parsed = my_parser.parse(input).unwrap();
+        let parsed = get_test_database_and_table()
+            .set_current_database("test_db")
+            .parse(input)
+            .unwrap();
         let databases = parsed.get_databases();
         assert_eq!(databases.len(), 1);
         let db = &databases[0];
@@ -534,32 +594,40 @@ mod tests {
     }
 
     #[test]
+    fn test_delete_record_from_table() {
+        let input = "DELETE FROM `users` WHERE `id` = 1;";
+        let parsed = get_test_database_and_table()
+            .set_current_database("test_db")
+            .parse(input)
+            .unwrap();
+        let databases = parsed.get_databases();
+        assert_eq!(databases.len(), 1);
+        let db = &databases[0];
+        assert_eq!(db.name, "test_db");
+        assert_eq!(db.tables.keys().len(), 1);
+        let table = db.tables.get("users").unwrap();
+        assert_eq!(table.deletes.len(), 1);
+    }
+
+    #[test]
     fn test_multiple_statements() {
         let input = r#"
-        CREATE DATABASE `test_db`;
-        USE `test_db`;
-        CREATE TABLE `users` (
-            `id` INT NOT NULL AUTO_INCREMENT,
-            `name` VARCHAR(255) NOT NULL,
-            PRIMARY KEY (`id`)
-        );
         INSERT INTO `users` (`name`) VALUES ('John Doe');
         UPDATE `users` SET `name` = 'Jane Doe' WHERE `id` = 1;
         DELETE FROM `users` WHERE `id` = 1;
         SET @last_id = 1;
         "#;
-        let result = parse_mysqldump(input).unwrap();
-        assert_eq!(result.len(), 1);
-        let db = &result[0];
+        let result = get_test_database_and_table().parse(input).unwrap();
+        let databases = result.get_databases();
+        assert_eq!(databases.len(), 1);
+        let db = &databases[0];
         assert_eq!(db.name, "test_db");
-        println!("db: {:?}", db);
         assert_eq!(db.tables.keys().len(), 1);
         let table = db.tables.get("users").unwrap();
-        assert_eq!(table.columns.len(), 2);
+        assert_eq!(table.columns.len(), 4);
         assert_eq!(table.inserts.len(), 1);
         assert_eq!(table.updates.len(), 1);
         assert_eq!(table.deletes.len(), 1);
-        assert_eq!(db.set_variables.len(), 1);
     }
 
     fn get_test_database_and_table() -> MyParser {

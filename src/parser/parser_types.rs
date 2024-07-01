@@ -102,16 +102,14 @@ impl Insert {
 #[derive(Debug, Clone)]
 pub struct Update {
     pub table_name: String,
-    pub set_clauses: Vec<(String, String)>,
-    pub where_clause: Option<String>,
+    pub set_clauses: HashMap<String, String>,
 }
 
 impl Update {
-    pub fn new(table_name: String) -> Self {
+    pub fn new(table_name: String, set_clauses: HashMap<String, String>) -> Self {
         Self {
             table_name,
-            set_clauses: Vec::new(),
-            where_clause: None,
+            set_clauses,
         }
     }
 }
@@ -120,6 +118,15 @@ impl Update {
 pub struct Delete {
     pub table_name: String,
     pub where_clause: Option<String>,
+}
+
+impl Delete {
+    pub fn new(table_name: String, where_clause: Option<String>) -> Self {
+        Self {
+            table_name,
+            where_clause,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
