@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ExtractResult;
+use anyhow::Context;
 
 use super::parser_types::{Column, DataType, Database, Delete, Index, Insert, Table, Update};
 use pest::Parser;
@@ -44,9 +45,13 @@ impl MyParser {
     }
 
     pub fn parse_mysqldump(mut self, input: &str) -> ExtractResult<Self> {
-        let mut parse_result =
-            MySQLDumpParser::parse(Rule::mysqldump, input).expect("invalid input");
-        let mysqldump = parse_result.next().expect("invalid input");
+        let mut parse_result = MySQLDumpParser::parse(Rule::mysqldump, input)
+            .context("invalid input")
+            .unwrap();
+        let mysqldump = parse_result
+            .next()
+            .context("unable to parse input")
+            .unwrap();
 
         let mut current_database: Option<Database> = self.current_database.clone();
 
@@ -628,6 +633,48 @@ mod tests {
         assert_eq!(table.inserts.len(), 1);
         assert_eq!(table.updates.len(), 1);
         assert_eq!(table.deletes.len(), 1);
+    }
+
+    #[test]
+    fn test_more_complicated_table() {
+        let input = r#"
+        CREATE TABLE IF NOT EXISTS `journal` (
+            `id` int(11) NOT NULL auto_increment,
+            `locked` tinyint(1) NOT NULL default '0',
+            `journalname` varchar(50) NOT NULL,
+            `type` varchar(20) NOT NULL,
+            `userid` int(11) NOT NULL default '0',
+            `customid` int(11) NOT NULL default '0',
+            `timestamp` bigint(20) unsigned NOT NULL default '0',
+            `content` text NOT NULL,
+            `title` varchar(255) NOT NULL,
+            PRIMARY KEY  (`id`),
+            KEY `journalname` (`journalname`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+        "#;
+        let result = get_test_database_and_table().parse(input).unwrap();
+        let databases = result.get_databases();
+        assert_eq!(databases.len(), 1);
+    }
+
+    #[test]
+    fn test_character_following_varchar() {
+        let input = r#"
+        CREATE TABLE IF NOT EXISTS `name_servers` (
+            `id` int(11) NOT NULL auto_increment,
+            `server_primary` tinyint(1) NOT NULL,
+            `server_name` varchar(255) character set latin1 NOT NULL,
+            `server_description` text character set latin1 NOT NULL,
+            `server_type` varchar(20) NOT NULL,
+            `api_auth_key` varchar(255) character set latin1 NOT NULL,
+            `api_sync_config` bigint(20) NOT NULL,
+            `api_sync_log` bigint(20) NOT NULL,
+            PRIMARY KEY  (`id`)
+          ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+          "#;
+        let result = get_test_database_and_table().parse(input).unwrap();
+        let databases = result.get_databases();
+        assert_eq!(databases.len(), 1);
     }
 
     fn get_test_database_and_table() -> MyParser {

@@ -30,7 +30,8 @@ table_option = {
     ^"ENGINE" ~ "=" ~ identifier |
     ^"DEFAULT" ~ ^"CHARSET" ~ "=" ~ identifier |
     ^"COLLATE" ~ "=" ~ identifier |
-    ^"AUTO_INCREMENT" ~ "=" ~ number
+    ^"AUTO_INCREMENT" ~ "=" ~ number |
+    ^"COMMENT" ~ "=" ~ string_literal
 }
 
 
@@ -45,10 +46,12 @@ column_definition = {
 
 index_definition = {
     (^"PRIMARY" ~ ^"KEY" | ^"UNIQUE" ~ ^"KEY"? | ^"KEY") ~
-    (quoted_identifier)? ~ "(" ~ quoted_identifier ~ ("," ~ quoted_identifier)* ~ ")"
+    (quoted_identifier)? ~ "(" ~ quoted_identifier ~ ("," ~ quoted_identifier)* ~ ")" ~ comma?
 }
 
 column_constraint = {
+    ^"CHARACTER" ~ ^"SET" ~ identifier |
+    ^"COLLATE" ~ identifier |
     ^"UNSIGNED" |
     ^"NOT" ~ ^"NULL" |
     ^"NULL" |

@@ -4,6 +4,8 @@ pub mod rules;
 pub mod settings;
 pub mod sqlparse;
 pub mod types;
-pub type ExtractResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+use anyhow::Result;
+pub type ExtractResult<T = ()> = Result<T>;
 
 pub use sqlparse::simple_parse;
