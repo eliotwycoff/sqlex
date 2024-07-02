@@ -3,7 +3,9 @@ use anyhow::Context;
 use pest::Parser;
 use pest_derive::Parser;
 use std::collections::HashMap;
-use types::{Column, DataType, Database, DatabaseOption, Delete, Index, Insert, Table, Update};
+use types::{
+    Column, DataType, Database, DatabaseOption, Delete, Index, Insert, PrimaryKey, Table, Update,
+};
 
 pub mod types;
 
@@ -199,14 +201,11 @@ fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
     for element in inner {
         match element.as_rule() {
             Rule::COLUMN_DEFINITION => {
-                let column = parse_column_definition(element);
-                if column.name == *table.primary_key.as_ref().unwrap_or(&String::new()) {
-                    table.primary_key = Some(column.name.clone());
-                }
-                table.columns.push(column);
+                table.columns.push(parse_column_definition(element));
             }
             Rule::INDEX_DEFINITION => {
                 let index = parse_index_definition(element);
+
                 if index.name == "PRIMARY" {
                     table.primary_key = Some(index.columns.first().unwrap().clone());
                 } else {

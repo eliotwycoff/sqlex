@@ -1,0 +1,1 @@
+PRIMARY KEY ({% for name in column_names %}`{{ name }}`{% if not loop.last %},{% endif %}{% endfor %})

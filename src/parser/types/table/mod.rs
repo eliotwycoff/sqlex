@@ -1,21 +1,25 @@
 use crate::parser::{
-    types::{Column, Delete, Index, Insert, Update},
+    types::{Column, Delete, Index, Insert, PrimaryKey, Update, TEMPLATES},
     Sql,
 };
+use tera::Context;
 
 #[derive(Debug, Clone, Default)]
 pub struct Object {
     // Table settings
     pub name: String,
     pub columns: Vec<Column>,
-    pub primary_key: Option<String>,
+    pub primary_key: Option<PrimaryKey>,
     pub indexes: Vec<Index>,
 
     // Table options
-    pub engine: Option<String>,
     pub auto_increment: Option<String>,
     pub charset: Option<String>,
     pub collate: Option<String>,
+    pub comment: Option<String>,
+    pub engine: Option<String>,
+    pub row_format: Option<String>,
+    pub stats_persistent: Option<String>,
 
     // Row operations
     pub inserts: Vec<Insert>,
@@ -30,10 +34,13 @@ impl Object {
             columns: Vec::new(),
             primary_key: None,
             indexes: Vec::new(),
-            engine: None,
             auto_increment: None,
             charset: None,
             collate: None,
+            comment: None,
+            engine: None,
+            row_format: None,
+            stats_persistent: None,
             inserts: Vec::new(),
             updates: Vec::new(),
             deletes: Vec::new(),
@@ -43,32 +50,35 @@ impl Object {
 
 impl Sql for Object {
     fn as_sql(&self) -> String {
-        let columns = self
+        let mut ctx = Context::new();
+
+        ctx.insert("name", self.name.as_str());
+
+        let mut column_specifications = self
             .columns
             .iter()
             .map(|col| col.as_sql())
-            .collect::<Vec<String>>()
-            .join(",\n");
+            .collect::<Vec<String>>();
 
-        // TODO: Finish this.
-        let engine = String::from("");
-        let auto_increment = String::from("");
-        let charset = String::from("");
-        let collate = String::from("");
+        self.primary_key
+            .inspect(|pk| column_specifications.push(pk.as_sql()));
+        self.indexes
+            .iter()
+            .for_each(|index| column_specifications.push(index.as_sql()));
 
-        // TODO: Finish this
-        format!(
-            r#"
-            --
-            -- Table structure for table `{}` 
-            --
+        ctx.insert("column_specifications", &column_specifications);
 
-            DROP TABLE IF EXISTS `{}`;
-            CREATE TABLE `{}` (
-              -- TODO: FINISH THIS
-            ) {} {} {} {}
-            "#,
-            self.name, self.name, self.name, engine, auto_increment, charset, collate,
-        )
+        // Insert table options into the context.
+        ctx.insert("auto_increment", &self.auto_increment);
+        ctx.insert("charset", &self.charset);
+        ctx.insert("collate", &self.collate);
+        ctx.insert("column", &self.comment);
+        ctx.insert("engine", &self.engine);
+        ctx.insert("row_format", &self.row_format);
+        ctx.insert("stats_persistent", &self.stats_persistent);
+
+        TEMPLATES
+            .render("table", &ctx)
+            .expect("Failed to render table sql")
     }
 }
