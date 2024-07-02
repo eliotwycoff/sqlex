@@ -1,3 +1,6 @@
+use lazy_static::lazy_static;
+use tera::Tera;
+
 mod column;
 mod data_type;
 mod database;
@@ -19,3 +22,16 @@ pub use insert::Object as Insert;
 pub use set::Object as Set;
 pub use table::Object as Table;
 pub use update::Object as Update;
+
+lazy_static! {
+    pub static ref TEMPLATES: Tera = {
+        match Tera::new("src/**/*.sql") {
+            Ok(t) => t,
+            Err(e) => {
+                println!("Parsing error: {e}");
+
+                ::std::process::exit(1);
+            }
+        }
+    };
+}
