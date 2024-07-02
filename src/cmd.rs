@@ -6,7 +6,7 @@ use std::path::Path;
 
 use clap::Parser;
 
-use crate::parser::parser::MyParser;
+use crate::parser::MyParser;
 use crate::rules::get_struct_by_name;
 use crate::ExtractResult;
 use crate::{settings::parse_masking_config, simple_parse, sqlparse::to_json, types::Database};
