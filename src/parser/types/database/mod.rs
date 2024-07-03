@@ -1,7 +1,8 @@
 use crate::parser::{
     types::{DatabaseOption, Table, TEMPLATES},
-    Sql,
+    Rule, Sql,
 };
+use pest::iterators::Pair;
 use std::collections::HashMap;
 use tera::Context;
 
@@ -19,6 +20,35 @@ impl Database {
             tables: HashMap::new(),
             options: Vec::new(),
         }
+    }
+}
+
+impl From<Pair<'_, Rule>> for Database {
+    fn from(pair: Pair<Rule>) -> Self {
+        let mut inner_pair = pair.into_inner();
+        let mut db = Self::new(
+            inner_pair
+                .next()
+                .unwrap()
+                .as_str()
+                .trim_matches('`')
+                .to_string(),
+        );
+
+        if let Some(option) = inner_pair.next() {
+            let mut inner_options_pair = option.into_inner();
+            let mut options = Vec::new();
+
+            while let Some(option) = inner_options_pair.next() {
+                if let Some(db_option) = DatabaseOption::from_pair(option) {
+                    options.push(db_option);
+                }
+            }
+
+            db.options = options;
+        }
+
+        db
     }
 }
 

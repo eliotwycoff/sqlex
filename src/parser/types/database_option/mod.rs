@@ -18,7 +18,7 @@ impl Sql for DatabaseOption {
 }
 
 impl DatabaseOption {
-    pub fn from_pair(pair: pest::iterators::Pair<Rule>) -> Option<DatabaseOption> {
+    pub fn from_pair(pair: pest::iterators::Pair<Rule>) -> Option<Self> {
         if let Some(inner_option) = pair.into_inner().next() {
             let key = match inner_option.as_rule() {
                 Rule::CHARACTER_SET => DatabaseOption::CharacterSet,
@@ -30,6 +30,7 @@ impl DatabaseOption {
                 Some(value) => value.as_str().trim_matches('`').to_string(),
                 None => String::new(),
             };
+
             Some(key(value))
         } else {
             None

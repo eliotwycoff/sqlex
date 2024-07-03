@@ -2,10 +2,8 @@ use crate::ExtractResult;
 use anyhow::Context;
 use pest::Parser;
 use pest_derive::Parser;
-use std::{collections::HashMap, ops::Not};
-use types::{
-    Column, DataType, Database, DatabaseOption, Delete, Index, Insert, PrimaryKey, Table, Update,
-};
+use std::collections::HashMap;
+use types::{Column, Database, Delete, Index, Insert, PrimaryKey, Table, Update};
 
 pub mod types;
 
@@ -69,7 +67,7 @@ impl MyParser {
                     for inner_pair in pair.into_inner() {
                         match inner_pair.as_rule() {
                             Rule::CREATE_DATABASE => {
-                                let database = parse_create_database(inner_pair);
+                                let database = Database::from(inner_pair);
 
                                 if let Some(db) = current_database.take() {
                                     if db.name != database.name {
@@ -170,26 +168,6 @@ impl MyParser {
     }
 }
 
-fn parse_create_database(pair: pest::iterators::Pair<Rule>) -> Database {
-    // let mut inner_pair = pair.into_inner().next().unwrap();
-    let mut inner_pair = pair.into_inner();
-    let name_pair = inner_pair.next();
-    let name = name_pair.unwrap().as_str().trim_matches('`').to_string();
-    let mut db = Database::new(name);
-    let option_pair = inner_pair.next();
-    if let Some(option) = option_pair {
-        let mut inner_options_pair = option.into_inner();
-        let mut options = Vec::new();
-        while let Some(option) = inner_options_pair.next() {
-            if let Some(db_option) = DatabaseOption::from_pair(option) {
-                options.push(db_option);
-            }
-        }
-        db.options = options;
-    }
-    db
-}
-
 fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
     let mut inner = pair.into_inner();
     let table_name = inner
@@ -203,17 +181,17 @@ fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
     for element in inner {
         match element.as_rule() {
             Rule::COLUMN_DEFINITION => {
-                let column = parse_column_definition(element);
+                let column = Column::from(element);
 
                 table.columns.push(column);
 
                 // TODO: Check if this column is marked as a PRIMARY KEY
             }
             Rule::PRIMARY_KEY => {
-                table.primary_key = Some(parse_primary_key_definition(element));
+                table.primary_key = Some(PrimaryKey::from(element));
             }
             Rule::INDEX_DEFINITION => {
-                table.indexes.push(parse_index_definition(element));
+                table.indexes.push(Index::from(element));
             }
             _ => {}
         }
@@ -287,17 +265,17 @@ fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
                     match action {
                         "ADD" => {
                             if spec_inner.peek().unwrap().as_rule() == Rule::COLUMN_DEFINITION {
-                                let column = parse_column_definition(spec_inner.next().unwrap());
+                                let column = Column::from(spec_inner.next().unwrap());
 
                                 table.columns.push(column);
                             } else {
-                                let index = parse_index_definition(spec_inner.next().unwrap());
+                                let index = Index::from(spec_inner.next().unwrap());
 
                                 table.indexes.push(index);
                             }
                         }
                         "MODIFY" => {
-                            let column = parse_column_definition(spec_inner.next().unwrap());
+                            let column = Column::from(spec_inner.next().unwrap());
 
                             if let Some(existing_column) =
                                 table.columns.iter_mut().find(|c| c.name == column.name)
@@ -333,165 +311,6 @@ fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
                 _ => {}
             }
         }
-    }
-}
-
-fn parse_column_definition(pair: pest::iterators::Pair<Rule>) -> Column {
-    let mut inner = pair.into_inner();
-    let name = inner.next().unwrap().as_str().trim_matches('`').to_string();
-    let data_type = parse_data_type(inner.next().unwrap());
-    let mut column = Column::new(name, data_type);
-
-    for constraint in inner {
-        match constraint.as_str() {
-            "NOT NULL" => column.nullable = false,
-            "NULL" => column.nullable = true,
-            s if s.starts_with("DEFAULT") => {
-                column.default = Some(
-                    s.strip_prefix("DEFAULT ")
-                        .unwrap()
-                        .trim_matches('\'')
-                        .to_string(),
-                )
-            }
-            "AUTO_INCREMENT" => column.auto_increment = true,
-            "PRIMARY KEY" => {}
-            _ => {}
-        }
-    }
-
-    column
-}
-
-fn parse_primary_key_definition(pair: pest::iterators::Pair<Rule>) -> PrimaryKey {
-    let mut inner = pair.into_inner();
-
-    match inner.peek().expect("Expected an inner rule").as_rule() {
-        Rule::INDEX_NAME => {
-            let name = inner
-                .next()
-                .map(|p| p.as_str().trim_matches('`').to_string());
-            let columns = inner
-                .map(|col| col.as_str().trim_matches('`').to_string())
-                .collect::<Vec<String>>();
-
-            PrimaryKey::new(name, columns)
-        }
-        Rule::QUOTED_IDENTIFIER => {
-            let columns = inner
-                .map(|col| col.as_str().trim_matches('`').to_string())
-                .collect::<Vec<String>>();
-
-            PrimaryKey::new(None, columns)
-        }
-        rule => panic!("Expected an INDEX_NAME or a QUOTED_IDENTIFIER, not {rule:?}"),
-    }
-}
-
-fn parse_index_definition(pair: pest::iterators::Pair<Rule>) -> Index {
-    let mut inner = pair.into_inner();
-    let index_type = inner.next().unwrap().as_str();
-    let name = inner
-        .next()
-        .map(|p| p.as_str().trim_matches('`').to_string())
-        .unwrap_or_else(|| format!("index_{}", uuid::Uuid::new_v4()));
-    let columns: Vec<String> = inner
-        .map(|col| col.as_str().trim_matches('`').to_string())
-        .collect();
-    let unique = index_type.contains("UNIQUE") || index_type == "PRIMARY KEY";
-
-    Index::new(name, columns, unique)
-}
-
-fn parse_data_type(pair: pest::iterators::Pair<Rule>) -> DataType {
-    let type_name = pair
-        .as_str()
-        .split('(')
-        .next()
-        .unwrap()
-        .trim()
-        .to_uppercase();
-    let mut inner = pair.into_inner();
-
-    match type_name.as_str() {
-        "TINYINT" | "SMALLINT" | "MEDIUMINT" | "INT" | "INTEGER" | "BIGINT" | "BIT" => {
-            let size = inner.next().map(|p| p.as_str().parse::<u32>().unwrap());
-            match type_name.as_str() {
-                "TINYINT" => DataType::TinyInt(size),
-                "SMALLINT" => DataType::SmallInt(size),
-                "MEDIUMINT" => DataType::MediumInt(size),
-                "INT" | "INTEGER" => DataType::Int(size),
-                "BIGINT" => DataType::BigInt(size),
-                "BIT" => DataType::Bit(size),
-                _ => unreachable!(),
-            }
-        }
-        "DECIMAL" | "NUMERIC" | "FLOAT" | "DOUBLE" => {
-            let precision = inner.next().map(|p| p.as_str().parse::<u32>().unwrap());
-            let scale = inner.next().map(|p| p.as_str().parse::<u32>().unwrap());
-            match type_name.as_str() {
-                "DECIMAL" | "NUMERIC" => {
-                    DataType::Decimal(precision.and_then(|p| scale.map(|s| (p, s))))
-                }
-                "FLOAT" => DataType::Float(precision.and_then(|p| scale.map(|s| (p, s)))),
-                "DOUBLE" => DataType::Double(precision.and_then(|p| scale.map(|s| (p, s)))),
-                _ => unreachable!(),
-            }
-        }
-        "DATE" => DataType::Date,
-        "DATETIME" | "TIMESTAMP" | "TIME" | "YEAR" => {
-            let size = inner.next().map(|p| p.as_str().parse::<u32>().unwrap());
-            match type_name.as_str() {
-                "DATETIME" => DataType::DateTime(size),
-                "TIMESTAMP" => DataType::Timestamp(size),
-                "TIME" => DataType::Time(size),
-                "YEAR" => DataType::Year(size),
-                _ => unreachable!(),
-            }
-        }
-        "CHAR" | "VARCHAR" | "BINARY" | "VARBINARY" => {
-            let size = inner
-                .next()
-                .map(|p| p.as_str().parse::<u32>().unwrap())
-                .unwrap();
-            match type_name.as_str() {
-                "CHAR" => DataType::Char(Some(size)),
-                "VARCHAR" => DataType::Varchar(Some(size)),
-                "BINARY" => DataType::Binary(Some(size)),
-                "VARBINARY" => DataType::Varbinary(Some(size)),
-                _ => unreachable!(),
-            }
-        }
-        "TINYBLOB" => DataType::TinyBlob,
-        "BLOB" => DataType::Blob,
-        "MEDIUMBLOB" => DataType::MediumBlob,
-        "LONGBLOB" => DataType::LongBlob,
-        "TINYTEXT" => DataType::TinyText,
-        "TEXT" => DataType::Text,
-        "MEDIUMTEXT" => DataType::MediumText,
-        "LONGTEXT" => DataType::LongText,
-        "ENUM" => {
-            let values: Vec<String> = inner
-                .map(|p| p.as_str().trim_matches('\'').to_string())
-                .collect();
-            DataType::Enum(values)
-        }
-        "SET" => {
-            let values: Vec<String> = inner
-                .map(|p| p.as_str().trim_matches('\'').to_string())
-                .collect();
-            DataType::Set(values)
-        }
-        "GEOMETRY" => DataType::Geometry,
-        "POINT" => DataType::Point,
-        "LINESTRING" => DataType::LineString,
-        "POLYGON" => DataType::Polygon,
-        "MULTIPOINT" => DataType::MultiPoint,
-        "MULTILINESTRING" => DataType::MultiLineString,
-        "MULTIPOLYGON" => DataType::MultiPolygon,
-        "GEOMETRYCOLLECTION" => DataType::GeometryCollection,
-        "JSON" => DataType::JSON,
-        _ => unimplemented!("Data type {} not implemented", type_name),
     }
 }
 

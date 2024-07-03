@@ -1,4 +1,5 @@
-use crate::parser::{types::DataType, Sql};
+use crate::parser::{types::DataType, Rule, Sql};
+use pest::iterators::Pair;
 
 #[derive(Debug, Clone, Default)]
 pub struct Column {
@@ -20,6 +21,35 @@ impl Column {
             auto_increment: false,
             unique: false,
         }
+    }
+}
+
+impl From<Pair<'_, Rule>> for Column {
+    fn from(pair: Pair<'_, Rule>) -> Self {
+        let mut inner = pair.into_inner();
+        let name = inner.next().unwrap().as_str().trim_matches('`').to_string();
+        let data_type = DataType::from(inner.next().unwrap());
+        let mut column = Column::new(name, data_type);
+
+        for constraint in inner {
+            match constraint.as_str() {
+                "NOT NULL" => column.nullable = false,
+                "NULL" => column.nullable = true,
+                s if s.starts_with("DEFAULT") => {
+                    column.default = Some(
+                        s.strip_prefix("DEFAULT ")
+                            .unwrap()
+                            .trim_matches('\'')
+                            .to_string(),
+                    )
+                }
+                "AUTO_INCREMENT" => column.auto_increment = true,
+                "PRIMARY KEY" => {}
+                _ => {}
+            }
+        }
+
+        column
     }
 }
 

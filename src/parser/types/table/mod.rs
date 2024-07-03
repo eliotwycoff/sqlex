@@ -1,7 +1,8 @@
 use crate::parser::{
     types::{Column, Delete, Index, Insert, PrimaryKey, Update, TEMPLATES},
-    Sql,
+    Rule, Sql,
 };
+use pest::iterators::Pair;
 use tera::Context;
 
 #[derive(Debug, Clone, Default)]
@@ -45,6 +46,40 @@ impl Table {
             updates: Vec::new(),
             deletes: Vec::new(),
         }
+    }
+}
+
+impl From<Pair<'_, Rule>> for Table {
+    fn from(pair: Pair<'_, Rule>) -> Self {
+        let mut inner = pair.into_inner();
+        let table_name = inner
+            .next()
+            .expect("unable to extract table name")
+            .as_str()
+            .trim_matches('`')
+            .to_string();
+        let mut table = Self::new(table_name);
+
+        for element in inner {
+            match element.as_rule() {
+                Rule::COLUMN_DEFINITION => {
+                    let column = Column::from(element);
+
+                    table.columns.push(column);
+
+                    // TODO: Check if this column is marked as a PRIMARY KEY
+                }
+                Rule::PRIMARY_KEY => {
+                    table.primary_key = Some(PrimaryKey::from(element));
+                }
+                Rule::INDEX_DEFINITION => {
+                    table.indexes.push(Index::from(element));
+                }
+                _ => {}
+            }
+        }
+
+        table
     }
 }
 
