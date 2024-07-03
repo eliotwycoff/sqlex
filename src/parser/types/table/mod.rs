@@ -114,7 +114,7 @@ impl Sql for Table {
         ctx.insert("stats_persistent", &self.stats_persistent);
 
         TEMPLATES
-            .render("table", &ctx)
+            .render("table/template.sql", &ctx)
             .expect("Failed to render table sql")
     }
 }

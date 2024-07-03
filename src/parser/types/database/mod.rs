@@ -75,7 +75,7 @@ impl Sql for Database {
         );
 
         TEMPLATES
-            .render("database", &ctx)
+            .render("database/template.sql", &ctx)
             .expect("Failed to render database sql")
     }
 }
