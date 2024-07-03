@@ -5,7 +5,7 @@ use crate::parser::{
 use tera::Context;
 
 #[derive(Debug, Clone, Default)]
-pub struct Object {
+pub struct Table {
     // Table settings
     pub name: String,
     pub columns: Vec<Column>,
@@ -27,7 +27,7 @@ pub struct Object {
     pub deletes: Vec<Delete>,
 }
 
-impl Object {
+impl Table {
     pub fn new(name: String) -> Self {
         Self {
             name,
@@ -48,7 +48,7 @@ impl Object {
     }
 }
 
-impl Sql for Object {
+impl Sql for Table {
     fn as_sql(&self) -> String {
         let mut ctx = Context::new();
 
@@ -61,6 +61,7 @@ impl Sql for Object {
             .collect::<Vec<String>>();
 
         self.primary_key
+            .as_ref()
             .inspect(|pk| column_specifications.push(pk.as_sql()));
         self.indexes
             .iter()

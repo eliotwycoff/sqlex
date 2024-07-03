@@ -6,13 +6,13 @@ use std::collections::HashMap;
 use tera::Context;
 
 #[derive(Debug, Clone, Default)]
-pub struct Object {
+pub struct Database {
     pub name: String,
     pub tables: HashMap<String, Table>,
     pub options: Vec<DatabaseOption>,
 }
 
-impl Object {
+impl Database {
     pub fn new(name: String) -> Self {
         Self {
             name,
@@ -22,7 +22,7 @@ impl Object {
     }
 }
 
-impl Sql for Object {
+impl Sql for Database {
     fn as_sql(&self) -> String {
         let mut ctx = Context::new();
 

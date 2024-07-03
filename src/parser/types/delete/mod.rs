@@ -1,12 +1,12 @@
 use crate::parser::Sql;
 
 #[derive(Debug, Clone)]
-pub struct Object {
+pub struct Delete {
     pub table_name: String,
     pub where_clause: Option<String>,
 }
 
-impl Object {
+impl Delete {
     pub fn new(table_name: String, where_clause: Option<String>) -> Self {
         Self {
             table_name,
@@ -15,7 +15,7 @@ impl Object {
     }
 }
 
-impl Sql for Object {
+impl Sql for Delete {
     fn as_sql(&self) -> String {
         todo!()
     }

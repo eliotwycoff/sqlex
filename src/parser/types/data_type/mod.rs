@@ -1,7 +1,7 @@
 use crate::parser::Sql;
 
 #[derive(Debug, Clone)]
-pub enum Object {
+pub enum DataType {
     TinyInt(Option<u32>),
     SmallInt(Option<u32>),
     MediumInt(Option<u32>),
@@ -42,13 +42,13 @@ pub enum Object {
     JSON,
 }
 
-impl Default for Object {
+impl Default for DataType {
     fn default() -> Self {
-        Object::Varchar(None)
+        DataType::Varchar(None)
     }
 }
 
-impl Sql for Object {
+impl Sql for DataType {
     fn as_sql(&self) -> String {
         todo!()
     }

@@ -1,14 +1,14 @@
 use crate::parser::Sql;
 
 #[derive(Debug, Clone)]
-pub struct Object {
-    pub name: Option<String>,
+pub struct Index {
+    pub name: String,
     pub columns: Vec<String>,
     pub unique: bool,
 }
 
-impl Object {
-    pub fn new(name: Option<String>, columns: Vec<String>, unique: bool) -> Self {
+impl Index {
+    pub fn new(name: String, columns: Vec<String>, unique: bool) -> Self {
         Self {
             name,
             columns,
@@ -17,7 +17,7 @@ impl Object {
     }
 }
 
-impl Sql for Object {
+impl Sql for Index {
     fn as_sql(&self) -> String {
         todo!()
     }

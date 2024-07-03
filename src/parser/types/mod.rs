@@ -13,17 +13,17 @@ mod set;
 mod table;
 mod update;
 
-pub use column::Object as Column;
-pub use data_type::Object as DataType;
-pub use database::Object as Database;
-pub use database_option::Object as DatabaseOption;
-pub use delete::Object as Delete;
-pub use index::Object as Index;
-pub use insert::Object as Insert;
-pub use primary_key::Object as PrimaryKey;
-pub use set::Object as Set;
-pub use table::Object as Table;
-pub use update::Object as Update;
+pub use column::Column;
+pub use data_type::DataType;
+pub use database::Database;
+pub use database_option::DatabaseOption;
+pub use delete::Delete;
+pub use index::Index;
+pub use insert::Insert;
+pub use primary_key::PrimaryKey;
+pub use set::Set;
+pub use table::Table;
+pub use update::Update;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {

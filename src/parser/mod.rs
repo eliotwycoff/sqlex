@@ -2,7 +2,7 @@ use crate::ExtractResult;
 use anyhow::Context;
 use pest::Parser;
 use pest_derive::Parser;
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Not};
 use types::{
     Column, DataType, Database, DatabaseOption, Delete, Index, Insert, PrimaryKey, Table, Update,
 };
@@ -34,6 +34,7 @@ impl MyParser {
         let parser = Self::new();
         let parsed_parser = parser.parse_mysqldump(input)?;
         // self.databases.extend(parsed_databases);
+
         Ok(parsed_parser)
     }
 
@@ -47,6 +48,7 @@ impl MyParser {
 
     pub fn set_current_database(mut self, name: &str) -> Self {
         self.current_database = self.databases.get(name).cloned();
+
         self
     }
 
@@ -201,16 +203,17 @@ fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
     for element in inner {
         match element.as_rule() {
             Rule::COLUMN_DEFINITION => {
-                table.columns.push(parse_column_definition(element));
+                let column = parse_column_definition(element);
+
+                table.columns.push(column);
+
+                // TODO: Check if this column is marked as a PRIMARY KEY
+            }
+            Rule::PRIMARY_KEY => {
+                table.primary_key = Some(parse_primary_key_definition(element));
             }
             Rule::INDEX_DEFINITION => {
-                let index = parse_index_definition(element);
-
-                if index.name == "PRIMARY" {
-                    table.primary_key = Some(index.columns.first().unwrap().clone());
-                } else {
-                    table.indexes.push(index);
-                }
+                table.indexes.push(parse_index_definition(element));
             }
             _ => {}
         }
@@ -280,18 +283,22 @@ fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
                 Rule::ALTER_SPECIFICATION => {
                     let mut spec_inner = alter_spec.into_inner();
                     let action = spec_inner.next().unwrap().as_str();
+
                     match action {
                         "ADD" => {
                             if spec_inner.peek().unwrap().as_rule() == Rule::COLUMN_DEFINITION {
                                 let column = parse_column_definition(spec_inner.next().unwrap());
+
                                 table.columns.push(column);
                             } else {
                                 let index = parse_index_definition(spec_inner.next().unwrap());
+
                                 table.indexes.push(index);
                             }
                         }
                         "MODIFY" => {
                             let column = parse_column_definition(spec_inner.next().unwrap());
+
                             if let Some(existing_column) =
                                 table.columns.iter_mut().find(|c| c.name == column.name)
                             {
@@ -300,6 +307,7 @@ fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
                         }
                         "DROP" => {
                             let drop_type = spec_inner.next().unwrap().as_str();
+
                             if drop_type == "COLUMN" {
                                 let column_name = spec_inner
                                     .next()
@@ -307,6 +315,7 @@ fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
                                     .as_str()
                                     .trim_matches('`')
                                     .to_string();
+
                                 table.columns.retain(|c| c.name != column_name);
                             } else if drop_type == "INDEX" {
                                 let index_name = spec_inner
@@ -354,17 +363,38 @@ fn parse_column_definition(pair: pest::iterators::Pair<Rule>) -> Column {
     column
 }
 
+fn parse_primary_key_definition(pair: pest::iterators::Pair<Rule>) -> PrimaryKey {
+    let mut inner = pair.into_inner();
+
+    match inner.peek().expect("Expected an inner rule").as_rule() {
+        Rule::INDEX_NAME => {
+            let name = inner
+                .next()
+                .map(|p| p.as_str().trim_matches('`').to_string());
+            let columns = inner
+                .map(|col| col.as_str().trim_matches('`').to_string())
+                .collect::<Vec<String>>();
+
+            PrimaryKey::new(name, columns)
+        }
+        Rule::QUOTED_IDENTIFIER => {
+            let columns = inner
+                .map(|col| col.as_str().trim_matches('`').to_string())
+                .collect::<Vec<String>>();
+
+            PrimaryKey::new(None, columns)
+        }
+        rule => panic!("Expected an INDEX_NAME or a QUOTED_IDENTIFIER, not {rule:?}"),
+    }
+}
+
 fn parse_index_definition(pair: pest::iterators::Pair<Rule>) -> Index {
     let mut inner = pair.into_inner();
     let index_type = inner.next().unwrap().as_str();
-    let name = if index_type != "PRIMARY KEY" {
-        inner
-            .next()
-            .map(|p| p.as_str().trim_matches('`').to_string())
-            .unwrap_or_else(|| format!("index_{}", uuid::Uuid::new_v4()))
-    } else {
-        "PRIMARY".to_string()
-    };
+    let name = inner
+        .next()
+        .map(|p| p.as_str().trim_matches('`').to_string())
+        .unwrap_or_else(|| format!("index_{}", uuid::Uuid::new_v4()));
     let columns: Vec<String> = inner
         .map(|col| col.as_str().trim_matches('`').to_string())
         .collect();

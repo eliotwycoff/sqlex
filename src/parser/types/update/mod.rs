@@ -2,12 +2,12 @@ use crate::parser::Sql;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
-pub struct Object {
+pub struct Update {
     pub table_name: String,
     pub set_clauses: HashMap<String, String>,
 }
 
-impl Object {
+impl Update {
     pub fn new(table_name: String, set_clauses: HashMap<String, String>) -> Self {
         Self {
             table_name,
@@ -16,7 +16,7 @@ impl Object {
     }
 }
 
-impl Sql for Object {
+impl Sql for Update {
     fn as_sql(&self) -> String {
         todo!()
     }

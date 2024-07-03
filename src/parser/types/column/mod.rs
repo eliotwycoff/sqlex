@@ -1,7 +1,7 @@
 use crate::parser::{types::DataType, Sql};
 
 #[derive(Debug, Clone, Default)]
-pub struct Object {
+pub struct Column {
     pub name: String,
     pub data_type: DataType,
     pub nullable: bool,
@@ -10,7 +10,7 @@ pub struct Object {
     pub unique: bool,
 }
 
-impl Object {
+impl Column {
     pub fn new(name: String, data_type: DataType) -> Self {
         Self {
             name,
@@ -23,7 +23,7 @@ impl Object {
     }
 }
 
-impl Sql for Object {
+impl Sql for Column {
     fn as_sql(&self) -> String {
         todo!()
     }
