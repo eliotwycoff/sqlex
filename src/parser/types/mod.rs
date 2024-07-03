@@ -27,7 +27,7 @@ pub use update::Update;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
-        match Tera::new("src/**/*.sql") {
+        match Tera::new("src/parser/types/**/*.sql") {
             Ok(t) => t,
             Err(e) => {
                 println!("Parsing error: {e}");

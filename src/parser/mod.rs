@@ -13,7 +13,7 @@ pub trait Sql {
 
 #[derive(Parser)]
 #[grammar = "parser/sql.pest"]
-struct MySQLDumpParser;
+struct MySqlParser;
 
 #[derive(Debug)]
 pub struct MyParser {
@@ -51,7 +51,7 @@ impl MyParser {
     }
 
     pub fn parse_mysqldump(mut self, input: &str) -> ExtractResult<Self> {
-        let mut parse_result = MySQLDumpParser::parse(Rule::MYSQL_DUMP, input)
+        let mut parse_result = MySqlParser::parse(Rule::MYSQL_DUMP, input)
             .context("invalid input")
             .unwrap();
         let mysqldump = parse_result
@@ -177,12 +177,10 @@ impl MyParser {
 fn parse_insert_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Insert {
     let column_pairs = pairs.next().expect("invalid insert statement").into_inner();
     let value_pairs = pairs.next().expect("invalid insert statement").into_inner();
-
     let columns: Vec<String> = column_pairs
         .into_iter()
         .map(|col| col.as_str().trim_matches('`').to_string())
         .collect();
-
     let values: Vec<String> = value_pairs
         .into_iter()
         .map(|value_list| {
@@ -201,9 +199,7 @@ fn parse_update_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Update {
     let table_pairs = pairs.next().expect("invalid update statement");
     let set_statement_pairs = pairs.next().expect("invalid update statement");
     let _where_statement_pairs = pairs.next().expect("invalid update statement");
-
     let table_name = table_pairs.as_str().trim_matches('`').to_string();
-
     let mut hm = HashMap::new();
     let mut set_statements = set_statement_pairs.into_inner();
 
@@ -219,7 +215,6 @@ fn parse_update_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Update {
 fn parse_delete_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Delete {
     let table_pairs = pairs.next().expect("invalid delete statement");
     let _where_statement_pairs = pairs.next().expect("invalid delete statement");
-
     let table_name = table_pairs.as_str().trim_matches('`').to_string();
 
     Delete::new(table_name, None)
@@ -297,13 +292,16 @@ mod tests {
     fn test_create_database() {
         let input = "CREATE DATABASE `test_db`;";
         let result = MyParser::with_parse(input).unwrap();
+
         assert_eq!(
             result.databases.len(),
             1,
             "Expected 1 database, got {}",
             result.databases.len()
         );
+
         let databases = result.get_databases();
+
         if !databases.is_empty() {
             assert_eq!(databases[0].name, "test_db", "Database name mismatch");
             assert!(databases[0].tables.is_empty(), "Expected no tables");
@@ -317,16 +315,21 @@ mod tests {
         let input =
             "CREATE DATABASE `namedmanager` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;";
         let result = MyParser::with_parse(input).unwrap();
+
         assert_eq!(
             result.databases.len(),
             1,
             "Expected 1 database, got {}",
             result.databases.len()
         );
+
         let databases = result.get_databases();
         let database = databases.first().unwrap();
+
         assert!(database.options.len() == 2);
+
         let options = &database.options;
+
         assert_eq!(
             options.len(),
             2,
@@ -363,11 +366,12 @@ mod tests {
             "Expected 1 database, got {}",
             result.databases.len()
         );
-
         let databases = result.get_databases();
+
         if !databases.is_empty() {
             assert_eq!(databases[0].name, "test_db", "Database name mismatch");
         }
+
         let db = databases[0].clone();
 
         assert_eq!(
@@ -404,23 +408,29 @@ mod tests {
         ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=8 ;
         "#;
         let result = MyParser::with_parse(sql).unwrap();
+
         assert_eq!(
             result.databases.len(),
             1,
             "Expected 1 database, got {}",
             result.databases.len()
         );
+
         let databases = result.get_databases();
+
         if !databases.is_empty() {
             assert_eq!(databases[0].name, "test_db", "Database name mismatch");
         }
+
         let db = databases[0].clone();
+
         assert_eq!(
             db.tables.len(),
             1,
             "Expected 1 table, got {}",
             db.tables.len()
         );
+
         if let Some(ref table) = db.tables.get("dns_record_types") {
             assert_eq!(
                 table.columns.len(),
@@ -446,11 +456,16 @@ mod tests {
         "#;
         let result = MyParser::with_parse(input).unwrap();
         let databases = result.get_databases();
+
         assert_eq!(databases.len(), 1);
+
         let db = &databases[0];
+
         assert_eq!(db.name, "test_db");
         assert_eq!(db.tables.keys().len(), 1);
+
         let table = db.tables.get("users").unwrap();
+
         assert_eq!(table.columns.len(), 3);
         assert_eq!(table.inserts.len(), 1);
     }
@@ -463,11 +478,16 @@ mod tests {
             .parse(input)
             .unwrap();
         let databases = parsed.get_databases();
+
         assert_eq!(databases.len(), 1);
+
         let db = &databases[0];
+
         assert_eq!(db.name, "test_db");
         assert_eq!(db.tables.keys().len(), 1);
+
         let table = db.tables.get("users").unwrap();
+
         assert_eq!(table.updates.len(), 1);
     }
 
@@ -479,11 +499,16 @@ mod tests {
             .parse(input)
             .unwrap();
         let databases = parsed.get_databases();
+
         assert_eq!(databases.len(), 1);
+
         let db = &databases[0];
+
         assert_eq!(db.name, "test_db");
         assert_eq!(db.tables.keys().len(), 1);
+
         let table = db.tables.get("users").unwrap();
+
         assert_eq!(table.deletes.len(), 1);
     }
 
@@ -497,11 +522,16 @@ mod tests {
         "#;
         let result = get_test_database_and_table().parse(input).unwrap();
         let databases = result.get_databases();
+
         assert_eq!(databases.len(), 1);
+
         let db = &databases[0];
+
         assert_eq!(db.name, "test_db");
         assert_eq!(db.tables.keys().len(), 1);
+
         let table = db.tables.get("users").unwrap();
+
         assert_eq!(table.columns.len(), 4);
         assert_eq!(table.inserts.len(), 1);
         println!("insert in multiple_Statements test: {:#?}", table.inserts);
@@ -528,6 +558,7 @@ mod tests {
         "#;
         let result = get_test_database_and_table().parse(input).unwrap();
         let databases = result.get_databases();
+
         assert_eq!(databases.len(), 1);
     }
 
@@ -548,6 +579,7 @@ mod tests {
           "#;
         let result = get_test_database_and_table().parse(input).unwrap();
         let databases = result.get_databases();
+
         assert_eq!(databases.len(), 1);
     }
 
@@ -564,14 +596,8 @@ mod tests {
         );
         "#;
         let mut my_parser = MyParser::new();
+
         my_parser = my_parser.parse(input).unwrap();
         my_parser
     }
 }
-
-/*
-let dbs = my_parser.get_databases();
-let db = dbs.first();
-
-db.get_tables();
-*/

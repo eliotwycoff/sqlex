@@ -1,6 +1,5 @@
 use crate::parser::{types::TEMPLATES, Rule, Sql};
 use pest::iterators::Pair;
-use tera::Context;
 
 #[derive(Debug, Clone)]
 pub struct PrimaryKey {
@@ -43,13 +42,112 @@ impl PrimaryKey {
 
 impl Sql for PrimaryKey {
     fn as_sql(&self) -> String {
-        let mut ctx = Context::new();
+        let mut ctx = tera::Context::new();
 
         ctx.insert("name", &self.name);
         ctx.insert("column_names", &self.column_names);
 
         TEMPLATES
-            .render("primary_key", &ctx)
+            .render("primary_key/template.sql", &ctx)
             .expect("Failed to render primary key sql")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::parser::MySqlParser;
+    use pest::Parser;
+
+    #[test]
+    fn can_parse_single_primary_key_without_name() {
+        let primary_key = PrimaryKey::from(
+            MySqlParser::parse(Rule::PRIMARY_KEY, "PRIMARY KEY (`id`),")
+                .expect("Invalid input")
+                .next()
+                .expect("Unable to parse input"),
+        );
+
+        assert!(primary_key.name.is_none());
+        assert_eq!(primary_key.column_names, vec![String::from("id")]);
+    }
+
+    #[test]
+    fn can_parse_multiple_primary_key_without_name() {
+        let primary_key = PrimaryKey::from(
+            MySqlParser::parse(Rule::PRIMARY_KEY, "PRIMARY KEY (`id1`, `id2`, `id3`),")
+                .expect("Invalid input")
+                .next()
+                .expect("Unable to parse input"),
+        );
+
+        assert!(primary_key.name.is_none());
+        assert_eq!(
+            primary_key.column_names,
+            vec![
+                String::from("id1"),
+                String::from("id2"),
+                String::from("id3"),
+            ]
+        );
+    }
+
+    #[test]
+    fn can_parse_single_primary_key_with_name() {
+        let primary_key = PrimaryKey::from(
+            MySqlParser::parse(Rule::PRIMARY_KEY, "CONSTRAINT `pk` PRIMARY KEY (`id`),")
+                .expect("Invalid input")
+                .next()
+                .expect("Unable to parse input"),
+        );
+
+        assert_eq!(primary_key.name.unwrap().as_str(), "pk");
+        assert_eq!(primary_key.column_names, vec![String::from("id")]);
+    }
+
+    #[test]
+    fn can_parse_multiple_primary_key_with_name() {
+        let primary_key = PrimaryKey::from(
+            MySqlParser::parse(
+                Rule::PRIMARY_KEY,
+                "CONSTRAINT `pk` PRIMARY KEY (`id1`, `id2`, `id3`),",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert_eq!(primary_key.name.unwrap().as_str(), "pk");
+        assert_eq!(
+            primary_key.column_names,
+            vec![
+                String::from("id1"),
+                String::from("id2"),
+                String::from("id3"),
+            ]
+        )
+    }
+
+    #[test]
+    fn can_write_primary_key_without_name() {
+        let primary_key = PrimaryKey {
+            name: None,
+            column_names: vec![String::from("id1"), String::from("id2")],
+        };
+
+        assert_eq!(primary_key.as_sql().trim(), "PRIMARY KEY (`id1`,`id2`)",);
+    }
+
+    #[test]
+    fn can_write_primary_key_with_name() {
+        let primary_key = PrimaryKey {
+            name: Some(String::from("pk")),
+            column_names: vec![String::from("id1"), String::from("id2")],
+        };
+
+        assert_eq!(
+            primary_key.as_sql().trim(),
+            "CONSTRAINT `pk` PRIMARY KEY (`id1`,`id2`)",
+        );
     }
 }
