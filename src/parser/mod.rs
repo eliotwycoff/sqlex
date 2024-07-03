@@ -3,7 +3,7 @@ use anyhow::Context;
 use pest::Parser;
 use pest_derive::Parser;
 use std::collections::HashMap;
-use types::{Column, Database, Delete, Index, Insert, PrimaryKey, Table, Update};
+use types::{Column, Database, Delete, Index, Insert, Table, Update};
 
 pub mod types;
 
@@ -58,7 +58,6 @@ impl MyParser {
             .next()
             .context("unable to parse input")
             .unwrap();
-
         let mut current_database: Option<Database> = self.current_database.clone();
 
         for pair in mysqldump.into_inner() {
@@ -74,6 +73,7 @@ impl MyParser {
                                         self.insert_database(db);
                                     }
                                 }
+
                                 current_database = Some(database);
                             }
                             Rule::USE_DATABASE => {
@@ -84,11 +84,13 @@ impl MyParser {
                                     .as_str()
                                     .trim_matches('`')
                                     .to_string();
+
                                 current_database = Some(Database::new(name.to_string()));
                             }
                             Rule::CREATE_TABLE => {
                                 if let Some(ref mut db) = current_database {
-                                    let table = parse_create_table(inner_pair);
+                                    let table = Table::from(inner_pair);
+
                                     db.tables.insert(table.name.clone(), table);
                                 }
                             }
@@ -107,6 +109,7 @@ impl MyParser {
                                         .as_str()
                                         .trim_matches('`')
                                         .to_string();
+
                                     db.tables.remove(&table_name);
                                 }
                             }
@@ -119,6 +122,7 @@ impl MyParser {
                                         .as_str()
                                         .trim_matches('`')
                                         .to_string();
+
                                     if let Some(table) = db.tables.get_mut(&table_name) {
                                         table.inserts.push(parse_insert_statement(inner));
                                     }
@@ -127,6 +131,7 @@ impl MyParser {
                             Rule::UPDATE_STATEMENT => {
                                 if let Some(ref mut db) = current_database {
                                     let update = parse_update_statement(inner_pair.into_inner());
+
                                     if let Some(table) = db.tables.get_mut(&update.table_name) {
                                         table.updates.push(update);
                                     }
@@ -134,6 +139,7 @@ impl MyParser {
                             }
                             Rule::DELETE_STATEMENT => {
                                 let delete = parse_delete_statement(inner_pair.into_inner());
+
                                 if let Some(ref mut db) = current_database {
                                     if let Some(table) = db.tables.get_mut(&delete.table_name) {
                                         table.deletes.push(delete);
@@ -166,38 +172,6 @@ impl MyParser {
     fn insert_database(&mut self, db: Database) {
         self.databases.insert(db.name.clone(), db);
     }
-}
-
-fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> Table {
-    let mut inner = pair.into_inner();
-    let table_name = inner
-        .next()
-        .expect("unable to extract table name")
-        .as_str()
-        .trim_matches('`')
-        .to_string();
-    let mut table = Table::new(table_name);
-
-    for element in inner {
-        match element.as_rule() {
-            Rule::COLUMN_DEFINITION => {
-                let column = Column::from(element);
-
-                table.columns.push(column);
-
-                // TODO: Check if this column is marked as a PRIMARY KEY
-            }
-            Rule::PRIMARY_KEY => {
-                table.primary_key = Some(PrimaryKey::from(element));
-            }
-            Rule::INDEX_DEFINITION => {
-                table.indexes.push(Index::from(element));
-            }
-            _ => {}
-        }
-    }
-
-    table
 }
 
 fn parse_insert_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Insert {
