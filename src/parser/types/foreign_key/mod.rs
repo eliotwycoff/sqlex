@@ -12,22 +12,41 @@ pub struct ForeignKey {
 impl From<Pair<'_, Rule>> for ForeignKey {
     fn from(pair: Pair<'_, Rule>) -> Self {
         let mut inner = pair.into_inner();
+        let name = match inner.peek().expect("Expected an inner rule").as_rule() {
+            Rule::INDEX_NAME => inner
+                .next()
+                .map(|p| p.as_str().trim_matches('`').to_string()),
+            _ => None,
+        };
+        let (local_column_names, foreign_table_name, foreign_column_names) = inner.fold(
+            (Vec::new(), String::new(), Vec::new()),
+            |(mut local, mut table, mut foreign), pair| {
+                match pair.as_rule() {
+                    Rule::QUOTED_IDENTIFIER => {
+                        table
+                            .is_empty()
+                            .then(|| &mut local)
+                            .unwrap_or_else(|| &mut foreign)
+                            .push(pair.as_str().trim_matches('`').to_string());
+                    }
+                    Rule::TABLE_NAME => {
+                        table = pair.as_str().trim_matches('`').to_string();
+                    }
+                    rule => {
+                        panic!("Expected QUOTED_IDENTIFIER or TABLE_NAME, not {rule:?}")
+                    }
+                };
 
-        match inner.peek().expect("Expected an inner rule").as_rule() {
-            Rule::INDEX_NAME => {
-                let name = inner
-                    .next()
-                    .map(|p| p.as_str().trim_matches('`').to_string());
+                (local, table, foreign)
+            },
+        );
 
-                // TODO: Finish this.
-                todo!()
-            }
-            Rule::QUOTED_IDENTIFIER => {
-                // TODO: Finish this.
-                todo!()
-            }
-            rule => panic!("Expected an INDEX_NAME or a QUOTED_IDENTIFIER, not {rule:?}"),
-        }
+        Self::new(
+            name,
+            local_column_names,
+            foreign_column_names,
+            foreign_table_name,
+        )
     }
 }
 
@@ -59,5 +78,128 @@ impl Sql for ForeignKey {
         TEMPLATES
             .render("foreign_key/template.sql", &ctx)
             .expect("Failed to render foreign key sql")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::parser::MySqlParser;
+    use pest::Parser;
+
+    #[test]
+    fn can_parse_single_foreign_key_without_name() {
+        let foreign_key = ForeignKey::from(
+            MySqlParser::parse(
+                Rule::FOREIGN_KEY,
+                "FOREIGN KEY (`column_id`) REFERENCES `column` (`id`),",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert!(foreign_key.name.is_none());
+        assert_eq!(
+            foreign_key.local_column_names,
+            vec![String::from("column_id")]
+        );
+        assert_eq!(foreign_key.foreign_column_names, vec![String::from("id")]);
+    }
+
+    #[test]
+    fn can_parse_multiple_foreign_key_without_name() {
+        let foreign_key = ForeignKey::from(
+            MySqlParser::parse(
+                Rule::FOREIGN_KEY,
+                "FOREIGN KEY (`column_id`, `column_name`) REFERENCES `column` (`id`, `name`),",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert!(foreign_key.name.is_none());
+        assert_eq!(
+            foreign_key.local_column_names,
+            vec![String::from("column_id"), String::from("column_name")]
+        );
+        assert_eq!(
+            foreign_key.foreign_column_names,
+            vec![String::from("id"), String::from("name")]
+        );
+    }
+
+    #[test]
+    fn can_parse_single_foreign_key_with_name() {
+        let foreign_key = ForeignKey::from(
+            MySqlParser::parse(
+                Rule::FOREIGN_KEY,
+                "CONSTRAINT `fk_column_id` FOREIGN KEY (`column_id`) REFERENCES `column` (`id`),",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert_eq!(foreign_key.name.unwrap().as_str(), "fk_column_id");
+        assert_eq!(
+            foreign_key.local_column_names,
+            vec![String::from("column_id")]
+        );
+        assert_eq!(foreign_key.foreign_column_names, vec![String::from("id")]);
+    }
+
+    #[test]
+    fn can_parse_multiple_foreign_key_with_name() {
+        let foreign_key = ForeignKey::from(
+            MySqlParser::parse(
+                Rule::FOREIGN_KEY,
+                "CONSTRAINT `fk_column` FOREIGN KEY (`column_id`, `column_name`) REFERENCES `column` (`id`, `name`),",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert_eq!(foreign_key.name.unwrap().as_str(), "fk_column");
+        assert_eq!(
+            foreign_key.local_column_names,
+            vec![String::from("column_id"), String::from("column_name")]
+        );
+        assert_eq!(
+            foreign_key.foreign_column_names,
+            vec![String::from("id"), String::from("name")]
+        );
+    }
+
+    #[test]
+    fn can_write_foreign_key_without_name() {
+        let foreign_key = ForeignKey {
+            name: None,
+            local_column_names: vec![String::from("column_id"), String::from("column_name")],
+            foreign_column_names: vec![String::from("id"), String::from("name")],
+            foreign_table_name: String::from("column"),
+        };
+
+        assert_eq!(
+            foreign_key.as_sql().trim(),
+            "FOREIGN KEY (`column_id`,`column_name`) REFERENCES `column` (`id`,`name`)",
+        );
+    }
+
+    #[test]
+    fn can_write_foreign_key_with_name() {
+        let foreign_key = ForeignKey {
+            name: Some(String::from("fk_column")),
+            local_column_names: vec![String::from("column_id"), String::from("column_name")],
+            foreign_column_names: vec![String::from("id"), String::from("name")],
+            foreign_table_name: String::from("column"),
+        };
+
+        assert_eq!(
+            foreign_key.as_sql().trim(),
+            "CONSTRAINT `fk_column` FOREIGN KEY (`column_id`,`column_name`) REFERENCES `column` (`id`,`name`)",
+        );
     }
 }
