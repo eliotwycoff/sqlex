@@ -1,14 +1,17 @@
-use crate::parser::{types::DataType, Rule, Sql};
+use crate::parser::{
+    types::{DataType, TEMPLATES},
+    Rule, Sql,
+};
 use pest::iterators::Pair;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Column {
     pub name: String,
     pub data_type: DataType,
     pub nullable: bool,
     pub default: Option<String>,
     pub auto_increment: bool,
-    pub unique: bool,
+    pub comment: Option<String>,
 }
 
 impl Column {
@@ -19,7 +22,7 @@ impl Column {
             nullable: true,
             default: None,
             auto_increment: false,
-            unique: false,
+            comment: None,
         }
     }
 }
@@ -44,8 +47,16 @@ impl From<Pair<'_, Rule>> for Column {
                     )
                 }
                 "AUTO_INCREMENT" => column.auto_increment = true,
-                "PRIMARY KEY" => {}
-                _ => {}
+                "PRIMARY KEY" => todo!("support for PRIMARY KEY"),
+                s if s.starts_with("COMMENT") => {
+                    column.comment = Some(
+                        s.strip_prefix("COMMENT ")
+                            .unwrap()
+                            .trim_matches('\'')
+                            .to_string(),
+                    )
+                }
+                other => todo!("support for {}", other),
             }
         }
 
@@ -55,6 +66,17 @@ impl From<Pair<'_, Rule>> for Column {
 
 impl Sql for Column {
     fn as_sql(&self) -> String {
-        todo!()
+        let mut ctx = tera::Context::new();
+
+        ctx.insert("name", &self.name);
+        ctx.insert("data_type", &self.data_type.as_sql());
+        ctx.insert("nullable", &self.nullable);
+        ctx.insert("default", &self.default);
+        ctx.insert("auto_increment", &self.auto_increment);
+        ctx.insert("comment", &self.comment);
+
+        TEMPLATES
+            .render("column/template.sql", &ctx)
+            .expect("Failed to render column sql")
     }
 }

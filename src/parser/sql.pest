@@ -54,12 +54,12 @@ COLUMN_DEFINITION = {
 }
 
 PRIMARY_KEY = {
-    ^"CONSTRAINT" ~ INDEX_NAME ~ "PRIMARY KEY" ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ COMMA? |
+    ^"CONSTRAINT" ~ INDEX_NAME ~ ^"PRIMARY" ~ ^"KEY" ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ COMMA? |
     ^"PRIMARY KEY" ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ COMMA?
 }
 
 FOREIGN_KEY = {
-    ^"CONSTRAINT" ~ INDEX_NAME ~ "FOREIGN KEY" ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ "REFERENCES" ~ TABLE_NAME ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ COMMA? |
+    ^"CONSTRAINT" ~ INDEX_NAME ~ ^"FOREIGN" ~ ^"KEY" ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ "REFERENCES" ~ TABLE_NAME ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ COMMA? |
     ^"FOREIGN KEY" ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ "REFERENCES" ~ TABLE_NAME ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ COMMA?
 }
 
@@ -67,7 +67,7 @@ INDEX_DEFINITION = {
     INDEX_TYPE ~ INDEX_NAME ~ "(" ~ QUOTED_IDENTIFIER ~ ("," ~ QUOTED_IDENTIFIER)* ~ ")" ~ COMMA?
 }
 
-INDEX_TYPE = { (^"UNIQUE KEY" | ^"KEY") }
+INDEX_TYPE = { (^"UNIQUE" ~ ^"KEY" | ^"KEY") }
 INDEX_NAME = { QUOTED_IDENTIFIER }
 TABLE_NAME = { QUOTED_IDENTIFIER }
 
@@ -80,7 +80,8 @@ COLUMN_CONSTRAINT = {
     ^"DEFAULT" ~ (STRING_LITERAL | NUMBER | ^"NULL") |
     ^"AUTO_INCREMENT" |
     ^"UNIQUE" |
-    ^"PRIMARY" ~ ^"KEY"
+    ^"PRIMARY" ~ ^"KEY" |
+    ^"COMMENT" ~ STRING_LITERAL
 }
 
 TABLE_ELEMENT_LIST = {
@@ -89,21 +90,25 @@ TABLE_ELEMENT_LIST = {
 }
 
 DATA_TYPE = {
-    ((^"TINYINT" | ^"SMALLINT" | ^"MEDIUMINT" | ^"INT" | ^"INTEGER" | ^"BIGINT") ~ ("(" ~ NUMBER ~ ")")?) |
-    ((^"DECIMAL" | ^"NUMERIC" | ^"FLOAT" | ^"DOUBLE") ~ ("(" ~ NUMBER ~ ("," ~ NUMBER)? ~ ")")?) |
+    ((^"TINYINT" | ^"SMALLINT" | ^"MEDIUMINT" | ^"INT" | ^"INTEGER" | ^"BIGINT") ~ ("(" ~ NUMBER ~ ")")? ~ UNSIGNED? ~ ZEROFILL?) |
+    ((^"DECIMAL" | ^"NUMERIC" | ^"FLOAT" | ^"DOUBLE") ~ ("(" ~ NUMBER ~ ("," ~ NUMBER)? ~ ")")? ~ UNSIGNED? ~ ZEROFILL?) |
     (^"BIT" ~ ("(" ~ NUMBER ~ ")")?) |
-    ^"DATE" |
-    ((^"DATETIME" | ^"TIMESTAMP" | ^"TIME") ~ ("(" ~ NUMBER ~ ")")?) |
+    ((^"DATETIME" | ^"DATE" | ^"TIMESTAMP" | ^"TIME") ~ ("(" ~ NUMBER ~ ")")?) |
     (^"YEAR" ~ ("(" ~ NUMBER ~ ")")?) |
-    ((^"CHAR" | ^"VARCHAR") ~ "(" ~ NUMBER ~ ")") |
-    ((^"BINARY" | ^"VARBINARY") ~ "(" ~ NUMBER ~ ")") |
-    (^"TINYBLOB" | ^"BLOB" | ^"MEDIUMBLOB" | ^"LONGBLOB") |
-    (^"TINYTEXT" | ^"TEXT" | ^"MEDIUMTEXT" | ^"LONGTEXT") |
-    (^"ENUM" ~ "(" ~ STRING_LITERAL ~ ("," ~ STRING_LITERAL)* ~ ")") |
-    (^"SET" ~ "(" ~ STRING_LITERAL ~ ("," ~ STRING_LITERAL)* ~ ")") |
-    (^"GEOMETRY" | ^"POINT" | ^"LINESTRING" | ^"POLYGON" | ^"MULTIPOINT" | ^"MULTILINESTRING" | ^"MULTIPOLYGON" | ^"GEOMETRYCOLLECTION") |
+    ((^"CHAR" | ^"VARCHAR") ~ ("(" ~ NUMBER ~ ")")? ~ CHARACTER_SET? ~ COLLATE?) |
+    (^"BINARY" ~ ("(" ~ NUMBER ~ ")")?) |
+    (^"VARBINARY" ~ "(" ~ NUMBER ~ ")") |
+    (^"BLOB" ~ ("(" ~ NUMBER ~ ")")?) |
+    (^"TINYBLOB" | ^"MEDIUMBLOB" | ^"LONGBLOB") |
+    (^"TEXT" ~ ("(" ~ NUMBER ~ ")")? ~ CHARACTER_SET? ~ COLLATE?) |
+    ((^"TINYTEXT" | ^"MEDIUMTEXT" | ^"LONGTEXT") ~ CHARACTER_SET? ~ COLLATE?) |
+    (^"ENUM" ~ "(" ~ STRING_LITERAL ~ ("," ~ STRING_LITERAL)* ~ ")" ~ CHARACTER_SET? ~ COLLATE?) |
+    (^"SET" ~ "(" ~ STRING_LITERAL ~ ("," ~ STRING_LITERAL)* ~ ")" ~ CHARACTER_SET? ~ COLLATE?) |
     ^"JSON"
 }
+
+UNSIGNED = { ^"UNSIGNED" }
+ZEROFILL = { ^"ZEROFILL" }
 
 ALTER_TABLE = {
     ^"ALTER" ~ ^"TABLE" ~ QUOTED_IDENTIFIER ~

@@ -1,5 +1,5 @@
 use crate::parser::{
-    types::{Column, Delete, Index, Insert, PrimaryKey, Update, TEMPLATES},
+    types::{Column, Delete, ForeignKey, Index, Insert, PrimaryKey, Update, TEMPLATES},
     Rule, Sql,
 };
 use pest::iterators::Pair;
@@ -11,6 +11,7 @@ pub struct Table {
     pub name: String,
     pub columns: Vec<Column>,
     pub primary_key: Option<PrimaryKey>,
+    pub foreign_keys: Vec<ForeignKey>,
     pub indexes: Vec<Index>,
 
     // Table options
@@ -32,19 +33,7 @@ impl Table {
     pub fn new(name: String) -> Self {
         Self {
             name,
-            columns: Vec::new(),
-            primary_key: None,
-            indexes: Vec::new(),
-            auto_increment: None,
-            charset: None,
-            collate: None,
-            comment: None,
-            engine: None,
-            row_format: None,
-            stats_persistent: None,
-            inserts: Vec::new(),
-            updates: Vec::new(),
-            deletes: Vec::new(),
+            ..Default::default()
         }
     }
 }
