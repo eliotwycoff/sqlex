@@ -123,6 +123,9 @@ impl From<Pair<'_, Rule>> for DataType {
             .split(' ')
             .next()
             .unwrap()
+            .split('(')
+            .next()
+            .unwrap()
             .trim()
             .to_uppercase();
         let mut inner = pair.into_inner();

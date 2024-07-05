@@ -35,7 +35,7 @@ impl From<Pair<'_, Rule>> for Column {
         let mut column = Column::new(name, data_type);
 
         for constraint in inner {
-            match constraint.as_str() {
+            match constraint.as_str().to_uppercase().as_str() {
                 "NOT NULL" => column.nullable = false,
                 "NULL" => column.nullable = true,
                 s if s.starts_with("DEFAULT") => {
@@ -78,5 +78,82 @@ impl Sql for Column {
         TEMPLATES
             .render("column/template.sql", &ctx)
             .expect("Failed to render column sql")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::ops::Not;
+
+    use super::*;
+    use crate::parser::MySqlParser;
+    use pest::Parser;
+
+    #[test]
+    fn can_parse_column() {
+        let column = Column::from(
+            MySqlParser::parse(Rule::COLUMN_DEFINITION, "`raw_response_json` text,")
+                .expect("Invalid input")
+                .next()
+                .expect("Unable to parse input"),
+        );
+
+        assert_eq!(column.name.as_str(), "raw_response_json");
+        assert!(matches!(
+            column.data_type,
+            DataType::Text {
+                m: None,
+                charset_name: None,
+                collation_name: None
+            }
+        ));
+        assert!(column.nullable);
+        assert!(column.default.is_none());
+        assert!(column.auto_increment.not());
+        assert!(column.comment.is_none());
+    }
+
+    #[test]
+    fn can_parse_column_with_default() {
+        let column = Column::from(
+            MySqlParser::parse(
+                Rule::COLUMN_DEFINITION,
+                "`settledBusinessDate` date DEFAULT NULL,",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert_eq!(column.name.as_str(), "settledBusinessDate");
+        assert!(matches!(column.data_type, DataType::Date,));
+        assert!(column.nullable);
+        assert_eq!(column.default.unwrap().as_str(), "NULL");
+        assert!(column.auto_increment.not());
+        assert!(column.comment.is_none());
+    }
+
+    #[test]
+    fn can_parse_column_not_null() {
+        let column = Column::from(
+            MySqlParser::parse(Rule::COLUMN_DEFINITION, "`key` varchar(255) NOT NULL,")
+                .expect("Invalid input")
+                .next()
+                .expect("Unable to parse input"),
+        );
+
+        assert_eq!(column.name.as_str(), "key");
+        assert!(matches!(
+            column.data_type,
+            DataType::Varchar {
+                m: Some(255),
+                charset_name: None,
+                collation_name: None
+            }
+        ));
+        assert!(column.nullable.not());
+        assert!(column.default.is_none());
+        assert!(column.auto_increment.not());
+        assert!(column.comment.is_none());
     }
 }
