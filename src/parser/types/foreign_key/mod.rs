@@ -78,6 +78,8 @@ impl Sql for ForeignKey {
         TEMPLATES
             .render("foreign_key/template.sql", &ctx)
             .expect("Failed to render foreign key sql")
+            .trim()
+            .to_string()
     }
 }
 

@@ -83,8 +83,9 @@ fn run_mask_pii_action(args: &MaskPIIArgs) -> ExtractResult<Vec<Statement>> {
     let config = parse_masking_config(&masking_config).expect("unable to load masking config");
     // let parser = sql_script_parser(&file_bytes).map(|x| x.statement);
     let mut my_parser = MyParser::new();
-    my_parser = my_parser.parse(file_str).unwrap();
-    println!("my parser: {:?}", my_parser);
+
+    // my_parser = my_parser.parse(file_str).unwrap();
+    // println!("my parser: {:?}", my_parser);
 
     // let mut issues = Vec::new();
     // let options = ParseOptions::new()

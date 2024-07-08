@@ -1,5 +1,5 @@
 use crate::parser::{
-    types::{DatabaseOption, Table, TEMPLATES},
+    types::{DatabaseOption, TEMPLATES},
     Rule, Sql,
 };
 use pest::iterators::Pair;
@@ -10,14 +10,12 @@ use tera::Context;
 pub struct Database {
     pub name: String,
     pub options: Vec<DatabaseOption>,
-    pub tables: HashMap<String, Table>,
 }
 
 impl Database {
     pub fn new(name: String) -> Self {
         Self {
             name,
-            tables: HashMap::new(),
             options: Vec::new(),
         }
     }
@@ -63,14 +61,6 @@ impl Sql for Database {
                 .options
                 .iter()
                 .map(|opt| opt.as_sql())
-                .collect::<Vec<String>>(),
-        );
-        ctx.insert(
-            "tables",
-            &self
-                .tables
-                .values()
-                .map(|table| table.as_sql())
                 .collect::<Vec<String>>(),
         );
 

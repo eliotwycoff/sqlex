@@ -1,29 +1,21 @@
 use crate::parser::{
-    types::{Column, ForeignKey, Index, PrimaryKey, TEMPLATES},
+    types::{Column, ForeignKey, Index, PrimaryKey, TableOption, TEMPLATES},
     Rule, Sql,
 };
 use pest::iterators::Pair;
 use tera::Context;
 
 #[derive(Debug, Clone, Default)]
-pub struct Table {
-    // Table settings
+pub struct CreateTableStatement {
     pub name: String,
     pub columns: Vec<Column>,
     pub primary_key: Option<PrimaryKey>,
     pub foreign_keys: Vec<ForeignKey>,
     pub indexes: Vec<Index>,
-    // // Table options
-    // pub auto_increment: Option<String>,
-    // pub charset: Option<String>,
-    // pub collate: Option<String>,
-    // pub comment: Option<String>,
-    // pub engine: Option<String>,
-    // pub row_format: Option<String>,
-    // pub stats_persistent: Option<String>,
+    pub options: Vec<TableOption>,
 }
 
-impl Table {
+impl CreateTableStatement {
     pub fn new(name: String) -> Self {
         Self {
             name,
@@ -32,7 +24,7 @@ impl Table {
     }
 }
 
-impl From<Pair<'_, Rule>> for Table {
+impl From<Pair<'_, Rule>> for CreateTableStatement {
     fn from(pair: Pair<'_, Rule>) -> Self {
         let mut inner = pair.into_inner();
         let table_name = inner
@@ -79,7 +71,7 @@ impl From<Pair<'_, Rule>> for Table {
     }
 }
 
-impl Sql for Table {
+impl Sql for CreateTableStatement {
     fn as_sql(&self) -> String {
         let mut ctx = Context::new();
 

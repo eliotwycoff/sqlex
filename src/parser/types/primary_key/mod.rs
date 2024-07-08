@@ -50,6 +50,8 @@ impl Sql for PrimaryKey {
         TEMPLATES
             .render("primary_key/template.sql", &ctx)
             .expect("Failed to render primary key sql")
+            .trim()
+            .to_string()
     }
 }
 

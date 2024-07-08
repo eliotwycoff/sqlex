@@ -102,6 +102,8 @@ impl Sql for TableOption {
                 &tera::Context::from_serialize(self).unwrap(),
             )
             .expect("Failed to render table option sql")
+            .trim()
+            .to_string()
     }
 }
 
