@@ -1,5 +1,5 @@
 use crate::parser::{
-    types::{Column, Delete, ForeignKey, Index, Insert, PrimaryKey, Update, TEMPLATES},
+    types::{Column, ForeignKey, Index, PrimaryKey, TEMPLATES},
     Rule, Sql,
 };
 use pest::iterators::Pair;
@@ -13,20 +13,14 @@ pub struct Table {
     pub primary_key: Option<PrimaryKey>,
     pub foreign_keys: Vec<ForeignKey>,
     pub indexes: Vec<Index>,
-
-    // Table options
-    pub auto_increment: Option<String>,
-    pub charset: Option<String>,
-    pub collate: Option<String>,
-    pub comment: Option<String>,
-    pub engine: Option<String>,
-    pub row_format: Option<String>,
-    pub stats_persistent: Option<String>,
-
-    // Row operations
-    pub inserts: Vec<Insert>,
-    pub updates: Vec<Update>,
-    pub deletes: Vec<Delete>,
+    // // Table options
+    // pub auto_increment: Option<String>,
+    // pub charset: Option<String>,
+    // pub collate: Option<String>,
+    // pub comment: Option<String>,
+    // pub engine: Option<String>,
+    // pub row_format: Option<String>,
+    // pub stats_persistent: Option<String>,
 }
 
 impl Table {
@@ -64,7 +58,20 @@ impl From<Pair<'_, Rule>> for Table {
                 Rule::INDEX_DEFINITION => {
                     table.indexes.push(Index::from(element));
                 }
-                _ => {}
+                // Rule::TABLE_OPTIONS => {
+                //     element.into_inner().for_each(|opt| {
+                //         let s = opt.as_str().to_ascii_uppercase();
+
+                //         if s.contains("AUTO_INCREMENT") {
+                //             table.auto_increment = Some(opt.into_inner().next().expect("NUMBER").as_str().to_string());
+                //         } else if s.contains("CHARSET") {
+                //             table.charset = Some(opt.into_inner().next().expect(""));
+                //         }
+                //     });
+                // }
+                other => panic!(
+                    "Expected COLUMN_DEFINITION, PRIMARY_KEY, INDEX_DEFINITION or TABLE_OPTIONS, not {other:?}"
+                ),
             }
         }
 
@@ -93,17 +100,24 @@ impl Sql for Table {
 
         ctx.insert("column_specifications", &column_specifications);
 
-        // Insert table options into the context.
-        ctx.insert("auto_increment", &self.auto_increment);
-        ctx.insert("charset", &self.charset);
-        ctx.insert("collate", &self.collate);
-        ctx.insert("column", &self.comment);
-        ctx.insert("engine", &self.engine);
-        ctx.insert("row_format", &self.row_format);
-        ctx.insert("stats_persistent", &self.stats_persistent);
+        // // Insert table options into the context.
+        // ctx.insert("auto_increment", &self.auto_increment);
+        // ctx.insert("charset", &self.charset);
+        // ctx.insert("collate", &self.collate);
+        // ctx.insert("column", &self.comment);
+        // ctx.insert("engine", &self.engine);
+        // ctx.insert("row_format", &self.row_format);
+        // ctx.insert("stats_persistent", &self.stats_persistent);
 
         TEMPLATES
             .render("table/template.sql", &ctx)
             .expect("Failed to render table sql")
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::parser::MySqlParser;
+    use pest::Parser;
 }

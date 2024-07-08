@@ -45,11 +45,10 @@ impl Sql for DatabaseOption {
 
 #[cfg(test)]
 mod test {
-    use std::ops::Not;
-
     use super::*;
     use crate::parser::MySqlParser;
     use pest::Parser;
+    use std::ops::Not;
 
     #[test]
     fn can_parse_database_options() {
@@ -70,7 +69,7 @@ mod test {
                 assert_eq!(value.as_str(), "utf8mb4");
             }
             _ => panic!("Expected character set"),
-        };
+        }
 
         match &database_options[1] {
             DatabaseOption::Collate { default, value } => {

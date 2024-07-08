@@ -114,39 +114,39 @@ impl MyParser {
                                     db.tables.remove(&table_name);
                                 }
                             }
-                            Rule::INSERT_STATEMENT => {
-                                if let Some(ref mut db) = current_database {
-                                    let mut inner = inner_pair.into_inner();
-                                    let table_name = inner
-                                        .next()
-                                        .unwrap()
-                                        .as_str()
-                                        .trim_matches('`')
-                                        .to_string();
+                            // Rule::INSERT_STATEMENT => {
+                            //     if let Some(ref mut db) = current_database {
+                            //         let mut inner = inner_pair.into_inner();
+                            //         let table_name = inner
+                            //             .next()
+                            //             .unwrap()
+                            //             .as_str()
+                            //             .trim_matches('`')
+                            //             .to_string();
 
-                                    if let Some(table) = db.tables.get_mut(&table_name) {
-                                        table.inserts.push(parse_insert_statement(inner));
-                                    }
-                                }
-                            }
-                            Rule::UPDATE_STATEMENT => {
-                                if let Some(ref mut db) = current_database {
-                                    let update = parse_update_statement(inner_pair.into_inner());
+                            //         if let Some(table) = db.tables.get_mut(&table_name) {
+                            //             table.inserts.push(parse_insert_statement(inner));
+                            //         }
+                            //     }
+                            // }
+                            // Rule::UPDATE_STATEMENT => {
+                            //     if let Some(ref mut db) = current_database {
+                            //         let update = parse_update_statement(inner_pair.into_inner());
 
-                                    if let Some(table) = db.tables.get_mut(&update.table_name) {
-                                        table.updates.push(update);
-                                    }
-                                }
-                            }
-                            Rule::DELETE_STATEMENT => {
-                                let delete = parse_delete_statement(inner_pair.into_inner());
+                            //         if let Some(table) = db.tables.get_mut(&update.table_name) {
+                            //             table.updates.push(update);
+                            //         }
+                            //     }
+                            // }
+                            // Rule::DELETE_STATEMENT => {
+                            //     let delete = parse_delete_statement(inner_pair.into_inner());
 
-                                if let Some(ref mut db) = current_database {
-                                    if let Some(table) = db.tables.get_mut(&delete.table_name) {
-                                        table.deletes.push(delete);
-                                    }
-                                }
-                            }
+                            //     if let Some(ref mut db) = current_database {
+                            //         if let Some(table) = db.tables.get_mut(&delete.table_name) {
+                            //             table.deletes.push(delete);
+                            //         }
+                            //     }
+                            // }
                             // Rule::set_statement => {
                             //     let set = parse_set_statement(statement);
                             //     db.set_variables.insert(set.variable, set.value);
@@ -468,7 +468,7 @@ mod tests {
         let table = db.tables.get("users").unwrap();
 
         assert_eq!(table.columns.len(), 3);
-        assert_eq!(table.inserts.len(), 1);
+        // assert_eq!(table.inserts.len(), 1);
     }
 
     #[test]
@@ -489,7 +489,7 @@ mod tests {
 
         let table = db.tables.get("users").unwrap();
 
-        assert_eq!(table.updates.len(), 1);
+        // assert_eq!(table.updates.len(), 1);
     }
 
     #[test]
@@ -510,7 +510,7 @@ mod tests {
 
         let table = db.tables.get("users").unwrap();
 
-        assert_eq!(table.deletes.len(), 1);
+        // assert_eq!(table.deletes.len(), 1);
     }
 
     #[test]
@@ -534,10 +534,10 @@ mod tests {
         let table = db.tables.get("users").unwrap();
 
         assert_eq!(table.columns.len(), 4);
-        assert_eq!(table.inserts.len(), 1);
-        println!("insert in multiple_Statements test: {:#?}", table.inserts);
-        assert_eq!(table.updates.len(), 1);
-        assert_eq!(table.deletes.len(), 1);
+        // assert_eq!(table.inserts.len(), 1);
+        // println!("insert in multiple_Statements test: {:#?}", table.inserts);
+        // assert_eq!(table.updates.len(), 1);
+        // assert_eq!(table.deletes.len(), 1);
     }
 
     #[test]

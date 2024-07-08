@@ -12,6 +12,7 @@ mod insert;
 mod primary_key;
 mod set;
 mod table;
+mod table_option;
 mod update;
 
 pub use column::Column;
@@ -25,6 +26,7 @@ pub use insert::Insert;
 pub use primary_key::PrimaryKey;
 pub use set::Set;
 pub use table::Table;
+pub use table_option::TableOption;
 pub use update::Update;
 
 lazy_static! {

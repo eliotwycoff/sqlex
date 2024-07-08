@@ -252,7 +252,7 @@ mod test {
                 comment: Some(String::from("This is a fully loaded column")),
             }
             .as_sql()
-            .trim(), 
+            .trim(),
             "`raw_response_json` TEXT (42) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Hello, world!' COMMENT 'This is a fully loaded column'"
         );
     }
