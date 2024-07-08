@@ -9,8 +9,8 @@ use tera::Context;
 #[derive(Debug, Clone, Default)]
 pub struct Database {
     pub name: String,
-    pub tables: HashMap<String, Table>,
     pub options: Vec<DatabaseOption>,
+    pub tables: HashMap<String, Table>,
 }
 
 impl Database {
@@ -40,8 +40,8 @@ impl From<Pair<'_, Rule>> for Database {
             let mut options = Vec::new();
 
             while let Some(option) = inner_options_pair.next() {
-                if let Some(db_option) = DatabaseOption::from_pair(option) {
-                    options.push(db_option);
+                if let Some(pair) = option.into_inner().next() {
+                    options.push(DatabaseOption::from(pair))
                 }
             }
 

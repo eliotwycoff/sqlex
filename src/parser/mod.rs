@@ -28,6 +28,7 @@ impl MyParser {
             current_database: None,
         }
     }
+
     pub fn with_parse(input: &str) -> ExtractResult<Self> {
         let parser = Self::new();
         let parsed_parser = parser.parse_mysqldump(input)?;
