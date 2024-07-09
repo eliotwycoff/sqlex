@@ -85,7 +85,8 @@ COLUMN_CONSTRAINT = {
     ^"UNSIGNED" |
     ^"NOT" ~ ^"NULL" |
     ^"NULL" |
-    ^"DEFAULT" ~ (STRING_LITERAL | NUMBER | ^"NULL") |
+    ^"DEFAULT" ~ (STRING_LITERAL | NUMBER | ^"NULL" | ^"CURRENT_TIMESTAMP") |
+    ^"ON" ~ ^"UPDATE" ~ (^"CURRENT_TIMESTAMP" | ^"CASCADE") |
     ^"AUTO_INCREMENT" |
     ^"UNIQUE" |
     ^"PRIMARY" ~ ^"KEY" |

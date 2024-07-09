@@ -112,7 +112,7 @@ mod test {
                     `SecurityToken` varchar(200) DEFAULT NULL,
                     `RoutingKey` varchar(50) DEFAULT NULL,
                     `AdminPrivilege` tinyint(1) DEFAULT '0',
-                    `CreatedAt` datetime NOT NULL,
+                    `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     PRIMARY KEY (`Id`),
                     KEY `fk_application_product` (`ProductId`),
                     CONSTRAINT `fk_application_product` FOREIGN KEY (`ProductId`) REFERENCES `product` (`Id`)
@@ -146,6 +146,7 @@ mod test {
                         },
                         nullable: false,
                         default: None,
+                        on_update: None,
                         auto_increment: true,
                         comment: None,
                     },
@@ -158,6 +159,7 @@ mod test {
                         },
                         nullable: false,
                         default: Some(String::from("0")),
+                        on_update: None,
                         auto_increment: false,
                         comment: None,
                     },
@@ -170,6 +172,7 @@ mod test {
                         },
                         nullable: false,
                         default: None,
+                        on_update: None,
                         auto_increment: false,
                         comment: None,
                     },
@@ -182,6 +185,7 @@ mod test {
                         },
                         nullable: true,
                         default: Some(String::from("NULL")),
+                        on_update: None,
                         auto_increment: false,
                         comment: None,
                     },
@@ -194,6 +198,7 @@ mod test {
                         },
                         nullable: true,
                         default: Some(String::from("NULL")),
+                        on_update: None,
                         auto_increment: false,
                         comment: None,
                     },
@@ -206,6 +211,7 @@ mod test {
                         },
                         nullable: true,
                         default: Some(String::from("0")),
+                        on_update: None,
                         auto_increment: false,
                         comment: None,
                     },
@@ -213,7 +219,8 @@ mod test {
                         name: String::from("CreatedAt"),
                         data_type: DataType::DateTime { fsp: None },
                         nullable: false,
-                        default: None,
+                        default: Some(String::from("CURRENT_TIMESTAMP")),
+                        on_update: Some(String::from("CURRENT_TIMESTAMP")),
                         auto_increment: false,
                         comment: None,
                     },
@@ -249,7 +256,7 @@ mod test {
             }
             .as_sql()
             .trim(),
-            "CREATE TABLE `application` (\n  `Id` INT NOT NULL AUTO_INCREMENT,\n  `ProductId` INT NOT NULL DEFAULT '0',\n  `Name` VARCHAR (36) NOT NULL,\n  `SecurityToken` VARCHAR (200) DEFAULT NULL,\n  `RoutingKey` VARCHAR (50) DEFAULT NULL,\n  `AdminPrivilege` TINYINT (1) DEFAULT '0',\n  `CreatedAt` DATETIME NOT NULL,\n  PRIMARY KEY (`Id`),\n  CONSTRAINT `fk_application_product` FOREIGN KEY (`ProductId`) REFERENCES `product` (`Id`),\n  KEY `fk_application_product` (`ProductId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"
+            "CREATE TABLE `application` (\n  `Id` INT NOT NULL AUTO_INCREMENT,\n  `ProductId` INT NOT NULL DEFAULT '0',\n  `Name` VARCHAR (36) NOT NULL,\n  `SecurityToken` VARCHAR (200) DEFAULT NULL,\n  `RoutingKey` VARCHAR (50) DEFAULT NULL,\n  `AdminPrivilege` TINYINT (1) DEFAULT '0',\n  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`Id`),\n  CONSTRAINT `fk_application_product` FOREIGN KEY (`ProductId`) REFERENCES `product` (`Id`),\n  KEY `fk_application_product` (`ProductId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"
         );
     }
 }

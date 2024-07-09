@@ -10,6 +10,7 @@ pub struct Column {
     pub data_type: DataType,
     pub nullable: bool,
     pub default: Option<String>,
+    pub on_update: Option<String>,
     pub auto_increment: bool,
     pub comment: Option<String>,
 }
@@ -21,6 +22,7 @@ impl Column {
             data_type,
             nullable: true,
             default: None,
+            on_update: None,
             auto_increment: false,
             comment: None,
         }
@@ -45,6 +47,17 @@ impl From<Pair<'_, Rule>> for Column {
                             .get(8..)
                             .unwrap()
                             .trim_matches('\'')
+                            .to_string(),
+                    )
+                }
+                s if s.starts_with("ON") => {
+                    column.on_update = Some(
+                        constraint
+                            .as_str()
+                            .split_ascii_whitespace()
+                            .rev()
+                            .next()
+                            .expect("on update value")
                             .to_string(),
                     )
                 }
@@ -76,6 +89,7 @@ impl Sql for Column {
         ctx.insert("data_type", &self.data_type.as_sql().trim());
         ctx.insert("nullable", &self.nullable);
         ctx.insert("default", &self.default);
+        ctx.insert("on_update", &self.on_update);
         ctx.insert("auto_increment", &self.auto_increment);
         ctx.insert("comment", &self.comment);
 
@@ -87,11 +101,10 @@ impl Sql for Column {
 
 #[cfg(test)]
 mod test {
-    use std::ops::Not;
-
     use super::*;
     use crate::parser::MySqlParser;
     use pest::Parser;
+    use std::ops::Not;
 
     #[test]
     fn can_parse_column() {
@@ -241,6 +254,27 @@ mod test {
     }
 
     #[test]
+    fn can_parse_column_with_on_update() {
+        let column = Column::from(
+            MySqlParser::parse(
+                Rule::COLUMN_DEFINITION,
+                "`updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert_eq!(column.name.as_str(), "updated_at");
+        assert!(matches!(column.data_type, DataType::DateTime { fsp: None },));
+        assert!(column.nullable.not());
+        assert_eq!(column.default.unwrap().as_str(), "CURRENT_TIMESTAMP");
+        assert_eq!(column.on_update.unwrap().as_str(), "CURRENT_TIMESTAMP");
+        assert!(column.auto_increment.not());
+        assert!(column.comment.is_none());
+    }
+
+    #[test]
     fn can_write_column() {
         assert_eq!(
             Column {
@@ -248,6 +282,7 @@ mod test {
                 data_type: DataType::Text { m: Some(42), charset_name: Some(String::from("utf8mb4")), collation_name: Some(String::from("utf8mb4_general_ci")) },
                 nullable: false,
                 default: Some(String::from("Hello, world!")),
+                on_update: None,
                 auto_increment: false,
                 comment: Some(String::from("This is a fully loaded column")),
             }
