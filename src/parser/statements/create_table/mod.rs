@@ -233,7 +233,8 @@ mod test {
                     name: Some(String::from("fk_application_product")),
                     local_column_names: vec![String::from("ProductId")],
                     foreign_column_names: vec![String::from("Id")],
-                    foreign_table_name: String::from("product")
+                    foreign_table_name: String::from("product"),
+                    on_update: None,
                 },],
                 indexes: vec![Index {
                     name: String::from("fk_application_product"),

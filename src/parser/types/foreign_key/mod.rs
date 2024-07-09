@@ -7,6 +7,7 @@ pub struct ForeignKey {
     pub local_column_names: Vec<String>,
     pub foreign_column_names: Vec<String>,
     pub foreign_table_name: String,
+    pub on_update: Option<String>,
 }
 
 impl From<Pair<'_, Rule>> for ForeignKey {
@@ -18,9 +19,9 @@ impl From<Pair<'_, Rule>> for ForeignKey {
                 .map(|p| p.as_str().trim_matches('`').to_string()),
             _ => None,
         };
-        let (local_column_names, foreign_table_name, foreign_column_names) = inner.fold(
-            (Vec::new(), String::new(), Vec::new()),
-            |(mut local, mut table, mut foreign), pair| {
+        let (local_column_names, foreign_table_name, foreign_column_names, on_update) = inner.fold(
+            (Vec::new(), String::new(), Vec::new(), None),
+            |(mut local, mut table, mut foreign, mut on_update), pair| {
                 match pair.as_rule() {
                     Rule::QUOTED_IDENTIFIER => {
                         table
@@ -32,12 +33,15 @@ impl From<Pair<'_, Rule>> for ForeignKey {
                     Rule::TABLE_NAME => {
                         table = pair.as_str().trim_matches('`').to_string();
                     }
+                    Rule::FK_ON_UPDATE => {
+                        on_update = Some(pair.as_str().split_ascii_whitespace().rev().next().expect("ON UPDATE value").to_string());
+                    }
                     rule => {
-                        panic!("Expected QUOTED_IDENTIFIER or TABLE_NAME, not {rule:?}")
+                        panic!("Expected QUOTED_IDENTIFIER, TABLE_NAME or FK_ON_UPDATE, not not {rule:?}")
                     }
                 };
 
-                (local, table, foreign)
+                (local, table, foreign, on_update)
             },
         );
 
@@ -46,6 +50,7 @@ impl From<Pair<'_, Rule>> for ForeignKey {
             local_column_names,
             foreign_column_names,
             foreign_table_name,
+            on_update,
         )
     }
 }
@@ -56,12 +61,14 @@ impl ForeignKey {
         local_column_names: Vec<String>,
         foreign_column_names: Vec<String>,
         foreign_table_name: String,
+        on_update: Option<String>,
     ) -> Self {
         Self {
             name,
             local_column_names,
             foreign_column_names,
             foreign_table_name,
+            on_update,
         }
     }
 }
@@ -74,6 +81,7 @@ impl Sql for ForeignKey {
         ctx.insert("local_column_names", &self.local_column_names);
         ctx.insert("foreign_column_names", &self.foreign_column_names);
         ctx.insert("foreign_table_name", &self.foreign_table_name);
+        ctx.insert("on_update", &self.on_update);
 
         TEMPLATES
             .render("foreign_key/template.sql", &ctx)
@@ -176,12 +184,28 @@ mod test {
     }
 
     #[test]
+    fn can_parse_foreign_key_with_on_update() {
+        let foreign_key = ForeignKey::from(
+            MySqlParser::parse(
+                Rule::FOREIGN_KEY,
+                "CONSTRAINT `fk_column` FOREIGN KEY (`column_id`) REFERENCES `column` (`id`) ON UPDATE CASCADE,",
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input"),
+        );
+
+        assert_eq!(foreign_key.on_update.unwrap().as_str(), "CASCADE");
+    }
+
+    #[test]
     fn can_write_foreign_key_without_name() {
         let foreign_key = ForeignKey {
             name: None,
             local_column_names: vec![String::from("column_id"), String::from("column_name")],
             foreign_column_names: vec![String::from("id"), String::from("name")],
             foreign_table_name: String::from("column"),
+            on_update: None,
         };
 
         assert_eq!(
@@ -197,11 +221,28 @@ mod test {
             local_column_names: vec![String::from("column_id"), String::from("column_name")],
             foreign_column_names: vec![String::from("id"), String::from("name")],
             foreign_table_name: String::from("column"),
+            on_update: None,
         };
 
         assert_eq!(
             foreign_key.as_sql().trim(),
             "CONSTRAINT `fk_column` FOREIGN KEY (`column_id`,`column_name`) REFERENCES `column` (`id`,`name`)",
+        );
+    }
+
+    #[test]
+    fn can_write_foreign_key_with_on_update() {
+        assert_eq!(
+            ForeignKey {
+                name: Some(String::from("fk_column")),
+                local_column_names: vec![String::from("column_id"), String::from("column_name")],
+                foreign_column_names: vec![String::from("id"), String::from("name")],
+                foreign_table_name: String::from("column"),
+                on_update: Some(String::from("CASCADE")),
+            }
+            .as_sql()
+            .trim(),
+            "CONSTRAINT `fk_column` FOREIGN KEY (`column_id`,`column_name`) REFERENCES `column` (`id`,`name`) ON UPDATE CASCADE",
         );
     }
 }
