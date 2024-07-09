@@ -1,0 +1,1 @@
+DROP{% if temporary %} TEMPORARY{% endif %} TABLE{% if if_exists %} IF EXISTS{% endif %}{% for name in names %} `{{ name }}`{% if not loop.last %},{% endif %}{% endfor %};
