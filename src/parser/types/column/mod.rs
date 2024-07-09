@@ -1,5 +1,5 @@
 use crate::parser::{
-    types::{DataType, TEMPLATES},
+    types::{DataType, DefaultValue, OnUpdateValue, TEMPLATES},
     Rule, Sql,
 };
 use pest::iterators::Pair;
@@ -9,8 +9,8 @@ pub struct Column {
     pub name: String,
     pub data_type: DataType,
     pub nullable: bool,
-    pub default: Option<String>,
-    pub on_update: Option<String>,
+    pub default: Option<DefaultValue>,
+    pub on_update: Option<OnUpdateValue>,
     pub auto_increment: bool,
     pub comment: Option<String>,
 }
@@ -41,25 +41,14 @@ impl From<Pair<'_, Rule>> for Column {
                 "NOT NULL" => column.nullable = false,
                 "NULL" => column.nullable = true,
                 s if s.starts_with("DEFAULT") => {
-                    column.default = Some(
-                        constraint
-                            .as_str()
-                            .get(8..)
-                            .unwrap()
-                            .trim_matches('\'')
-                            .to_string(),
-                    )
+                    column.default = Some(DefaultValue::from(
+                        constraint.into_inner().next().expect("DEFAULT_VALUE"),
+                    ))
                 }
                 s if s.starts_with("ON") => {
-                    column.on_update = Some(
-                        constraint
-                            .as_str()
-                            .split_ascii_whitespace()
-                            .rev()
-                            .next()
-                            .expect("on update value")
-                            .to_string(),
-                    )
+                    column.on_update = Some(OnUpdateValue::from(
+                        constraint.into_inner().next().expect("ON_UPDATE_VALUE"),
+                    ))
                 }
                 "AUTO_INCREMENT" => column.auto_increment = true,
                 "PRIMARY KEY" => todo!("support for PRIMARY KEY"),
@@ -86,10 +75,16 @@ impl Sql for Column {
         let mut ctx = tera::Context::new();
 
         ctx.insert("name", &self.name);
-        ctx.insert("data_type", &self.data_type.as_sql().trim());
+        ctx.insert("data_type", &self.data_type.as_sql());
         ctx.insert("nullable", &self.nullable);
-        ctx.insert("default", &self.default);
-        ctx.insert("on_update", &self.on_update);
+        ctx.insert(
+            "default",
+            &self.default.as_ref().map(|default| default.as_sql()),
+        );
+        ctx.insert(
+            "on_update",
+            &self.on_update.as_ref().map(|on_update| on_update.as_sql()),
+        );
         ctx.insert("auto_increment", &self.auto_increment);
         ctx.insert("comment", &self.comment);
 
@@ -145,7 +140,7 @@ mod test {
         assert_eq!(column.name.as_str(), "settledBusinessDate");
         assert!(matches!(column.data_type, DataType::Date,));
         assert!(column.nullable);
-        assert_eq!(column.default.unwrap().as_str(), "NULL");
+        assert!(matches!(column.default, Some(DefaultValue::Null)));
         assert!(column.auto_increment.not());
         assert!(column.comment.is_none());
     }
@@ -218,7 +213,13 @@ mod test {
             }
         ));
         assert!(column.nullable);
-        assert_eq!(column.default.unwrap().as_str(), "0.00");
+
+        let default_value = match column.default.unwrap() {
+            DefaultValue::Text { value } => value,
+            _ => panic!("Expected DefaultValue::Text"),
+        };
+
+        assert_eq!(default_value.as_str(), "0.00");
         assert!(column.auto_increment.not());
         assert_eq!(
             column.comment.unwrap().as_str(),
@@ -248,7 +249,13 @@ mod test {
             }
         ));
         assert!(column.nullable.not());
-        assert_eq!(column.default.unwrap().as_str(), "00000000000");
+
+        let default_value = match column.default.unwrap() {
+            DefaultValue::Text { value } => value,
+            _ => panic!("Expected DefaultValue::Text"),
+        };
+
+        assert_eq!(default_value.as_str(), "00000000000");
         assert!(column.auto_increment.not());
         assert!(column.comment.is_none());
     }
@@ -258,7 +265,7 @@ mod test {
         let column = Column::from(
             MySqlParser::parse(
                 Rule::COLUMN_DEFINITION,
-                "`updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,",
+                "`updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(6),",
             )
             .expect("Invalid input")
             .next()
@@ -268,8 +275,20 @@ mod test {
         assert_eq!(column.name.as_str(), "updated_at");
         assert!(matches!(column.data_type, DataType::DateTime { fsp: None },));
         assert!(column.nullable.not());
-        assert_eq!(column.default.unwrap().as_str(), "CURRENT_TIMESTAMP");
-        assert_eq!(column.on_update.unwrap().as_str(), "CURRENT_TIMESTAMP");
+
+        let default_value = match column.default.unwrap() {
+            DefaultValue::CurrentTimestamp { value } => value,
+            _ => panic!("Expected DefaultValue::Text"),
+        };
+
+        assert!(default_value.is_none());
+
+        let on_update_value = match column.on_update.unwrap() {
+            OnUpdateValue::CurrentTimestamp { value } => value,
+            _ => panic!("Expected OnUpdateValue::CurrentTimestamp"),
+        };
+
+        assert_eq!(on_update_value.unwrap(), 6);
         assert!(column.auto_increment.not());
         assert!(column.comment.is_none());
     }
@@ -281,7 +300,7 @@ mod test {
                 name: String::from("raw_response_json"),
                 data_type: DataType::Text { m: Some(42), charset_name: Some(String::from("utf8mb4")), collation_name: Some(String::from("utf8mb4_general_ci")) },
                 nullable: false,
-                default: Some(String::from("Hello, world!")),
+                default: Some(DefaultValue::Text { value: String::from("Hello, world!") }),
                 on_update: None,
                 auto_increment: false,
                 comment: Some(String::from("This is a fully loaded column")),

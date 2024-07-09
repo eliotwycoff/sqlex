@@ -419,6 +419,8 @@ impl Sql for DataType {
                 &tera::Context::from_serialize(self).unwrap(),
             )
             .expect("Failed to render data type sql")
+            .trim()
+            .to_string()
     }
 }
 

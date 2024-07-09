@@ -89,12 +89,23 @@ COLUMN_CONSTRAINT = {
     ^"UNSIGNED" |
     ^"NOT" ~ ^"NULL" |
     ^"NULL" |
-    ^"DEFAULT" ~ (STRING_LITERAL | NUMBER | ^"NULL" | ^"CURRENT_TIMESTAMP") |
-    ^"ON" ~ ^"UPDATE" ~ (^"CURRENT_TIMESTAMP" | ^"CASCADE") |
+    ^"DEFAULT" ~ DEFAULT_VALUE |
+    ^"ON" ~ ^"UPDATE" ~ ON_UPDATE_VALUE |
     ^"AUTO_INCREMENT" |
     ^"UNIQUE" |
     ^"PRIMARY" ~ ^"KEY" |
     ^"COMMENT" ~ STRING_LITERAL
+}
+
+DEFAULT_VALUE = {
+    ^"NULL" |
+    ^"CURRENT_TIMESTAMP" ~ ("(" ~ NUMBER ~ ")")? |
+    STRING_LITERAL |
+    NUMBER
+}
+ON_UPDATE_VALUE = {
+    ^"CASCADE" |
+    ^"CURRENT_TIMESTAMP" ~ ("(" ~ NUMBER ~ ")")?
 }
 
 TABLE_ELEMENT_LIST = {

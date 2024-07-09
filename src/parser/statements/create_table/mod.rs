@@ -97,7 +97,10 @@ impl Sql for CreateTable {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::parser::{types::DataType, MySqlParser};
+    use crate::parser::{
+        types::{DataType, DefaultValue, OnUpdateValue},
+        MySqlParser,
+    };
     use pest::Parser;
 
     #[test]
@@ -158,7 +161,7 @@ mod test {
                             zerofill: false
                         },
                         nullable: false,
-                        default: Some(String::from("0")),
+                        default: Some(DefaultValue::Text { value: String::from("0") }),
                         on_update: None,
                         auto_increment: false,
                         comment: None,
@@ -184,7 +187,7 @@ mod test {
                             collation_name: None
                         },
                         nullable: true,
-                        default: Some(String::from("NULL")),
+                        default: Some(DefaultValue::Null),
                         on_update: None,
                         auto_increment: false,
                         comment: None,
@@ -197,7 +200,7 @@ mod test {
                             collation_name: None
                         },
                         nullable: true,
-                        default: Some(String::from("NULL")),
+                        default: Some(DefaultValue::Null),
                         on_update: None,
                         auto_increment: false,
                         comment: None,
@@ -210,7 +213,7 @@ mod test {
                             zerofill: false
                         },
                         nullable: true,
-                        default: Some(String::from("0")),
+                        default: Some(DefaultValue::Text { value: String::from("0") }),
                         on_update: None,
                         auto_increment: false,
                         comment: None,
@@ -219,8 +222,8 @@ mod test {
                         name: String::from("CreatedAt"),
                         data_type: DataType::DateTime { fsp: None },
                         nullable: false,
-                        default: Some(String::from("CURRENT_TIMESTAMP")),
-                        on_update: Some(String::from("CURRENT_TIMESTAMP")),
+                        default: Some(DefaultValue::CurrentTimestamp { value: None }),
+                        on_update: Some(OnUpdateValue::CurrentTimestamp { value: None }),
                         auto_increment: false,
                         comment: None,
                     },
