@@ -129,7 +129,8 @@ impl From<Pairs<'_, Rule>> for Set {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::Parser;
+    use pest::Parser;
+
     use crate::parser::{MySqlParser, Rule};
 
     use super::*;

@@ -1,10 +1,4 @@
-use crate::ExtractResult;
-use anyhow::Context;
-use pest::Parser;
 use pest_derive::Parser;
-use statements::CreateTable;
-use std::collections::HashMap;
-use types::{Column, Delete, Index, Insert, Update};
 
 pub(crate) mod parse_utils;
 pub mod statements;
@@ -178,51 +172,51 @@ struct MySqlParser;
 //     }
 // }
 
-fn parse_insert_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Insert {
-    let column_pairs = pairs.next().expect("invalid insert statement").into_inner();
-    let value_pairs = pairs.next().expect("invalid insert statement").into_inner();
-    let columns: Vec<String> = column_pairs
-        .into_iter()
-        .map(|col| col.as_str().trim_matches('`').to_string())
-        .collect();
-    let values: Vec<String> = value_pairs
-        .into_iter()
-        .map(|value_list| {
-            value_list
-                .into_inner()
-                .map(|value| value.as_str().trim_matches('\'').to_string())
-                .collect::<Vec<String>>()
-        })
-        .flatten()
-        .collect();
+// fn parse_insert_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Insert {
+//     let column_pairs = pairs.next().expect("invalid insert statement").into_inner();
+//     let value_pairs = pairs.next().expect("invalid insert statement").into_inner();
+//     let columns: Vec<String> = column_pairs
+//         .into_iter()
+//         .map(|col| col.as_str().trim_matches('`').to_string())
+//         .collect();
+//     let values: Vec<String> = value_pairs
+//         .into_iter()
+//         .map(|value_list| {
+//             value_list
+//                 .into_inner()
+//                 .map(|value| value.as_str().trim_matches('\'').to_string())
+//                 .collect::<Vec<String>>()
+//         })
+//         .flatten()
+//         .collect();
 
-    Insert::new(columns, values)
-}
+//     Insert::new(columns, values)
+// }
 
-fn parse_update_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Update {
-    let table_pairs = pairs.next().expect("invalid update statement");
-    let set_statement_pairs = pairs.next().expect("invalid update statement");
-    let _where_statement_pairs = pairs.next().expect("invalid update statement");
-    let table_name = table_pairs.as_str().trim_matches('`').to_string();
-    let mut hm = HashMap::new();
-    let mut set_statements = set_statement_pairs.into_inner();
+// fn parse_update_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Update {
+// let table_pairs = pairs.next().expect("invalid update statement");
+// let set_statement_pairs = pairs.next().expect("invalid update statement");
+// let _where_statement_pairs = pairs.next().expect("invalid update statement");
+// let table_name = table_pairs.as_str().trim_matches('`').to_string();
+// let mut hm = HashMap::new();
+// let mut set_statements = set_statement_pairs.into_inner();
 
-    while let Some(ss) = set_statements.next() {
-        let var = ss.as_str().trim_matches('`').to_string();
-        let val = set_statements.next().unwrap().as_str().trim_matches('\'');
-        hm.insert(var, val.to_string());
-    }
+// while let Some(ss) = set_statements.next() {
+//     let var = ss.as_str().trim_matches('`').to_string();
+//     let val = set_statements.next().unwrap().as_str().trim_matches('\'');
+//     hm.insert(var, val.to_string());
+// }
 
-    Update::new(table_name, hm)
-}
+// Update::new(table_name, hm)
+// }
 
-fn parse_delete_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Delete {
-    let table_pairs = pairs.next().expect("invalid delete statement");
-    let _where_statement_pairs = pairs.next().expect("invalid delete statement");
-    let table_name = table_pairs.as_str().trim_matches('`').to_string();
+// fn parse_delete_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Delete {
+//     let table_pairs = pairs.next().expect("invalid delete statement");
+//     let _where_statement_pairs = pairs.next().expect("invalid delete statement");
+//     let table_name = table_pairs.as_str().trim_matches('`').to_string();
 
-    Delete::new(table_name, None)
-}
+//     Delete::new(table_name, None)
+// }
 
 // fn parse_alter_table(pair: pest::iterators::Pair<Rule>, db: &mut Database) {
 //     let mut inner = pair.into_inner();

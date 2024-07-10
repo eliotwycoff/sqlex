@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
 use tera::Tera;
 
+mod assignments;
 mod column;
 mod data_type;
 mod database_option;
@@ -16,6 +17,7 @@ mod table_option;
 mod update;
 mod where_stmts;
 
+pub use assignments::AssignmentValue;
 pub use column::Column;
 pub use data_type::DataType;
 pub use database_option::DatabaseOption;
