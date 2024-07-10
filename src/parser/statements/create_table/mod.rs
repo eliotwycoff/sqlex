@@ -8,6 +8,7 @@ use pest::iterators::Pair;
 #[derive(Debug, Clone)]
 pub struct CreateTable {
     pub name: String,
+    pub if_not_exists: bool,
     pub columns: Vec<Column>,
     pub primary_key: Option<PrimaryKey>,
     pub foreign_keys: Vec<ForeignKey>,
@@ -18,12 +19,19 @@ pub struct CreateTable {
 impl From<Pair<'_, Rule>> for CreateTable {
     fn from(pair: Pair<'_, Rule>) -> Self {
         let mut inner = pair.into_inner();
-        let name = inner
-            .next()
-            .expect("table name")
-            .as_str()
-            .trim_matches('`')
-            .to_string();
+        let element = inner.next().expect("rule");
+        let (name, if_not_exists) = match element.as_rule() {
+            Rule::IF_NOT_EXISTS => (
+                inner
+                    .next()
+                    .expect("QUOTED_IDENTIFIER")
+                    .as_str()
+                    .trim_matches('`')
+                    .to_string(),
+                true,
+            ),
+            _ => (element.as_str().trim_matches('`').to_string(), false),
+        };
         let mut columns = Vec::new();
         let mut primary_key = None;
         let mut foreign_keys = Vec::new();
@@ -49,6 +57,7 @@ impl From<Pair<'_, Rule>> for CreateTable {
 
         Self {
             name,
+            if_not_exists,
             columns,
             primary_key,
             foreign_keys,
@@ -83,6 +92,7 @@ impl Sql for CreateTable {
             .for_each(|idx| table_specs.push(idx.as_sql()));
 
         ctx.insert("name", self.name.as_str());
+        ctx.insert("if_not_exists", &self.if_not_exists);
         ctx.insert("table_specs", &table_specs);
         ctx.insert("table_options", &table_options);
 
@@ -108,7 +118,7 @@ mod test {
         let create_table = CreateTable::from(
             MySqlParser::parse(
                 Rule::CREATE_TABLE,
-                "CREATE TABLE `application` (
+                "CREATE TABLE IF NOT EXISTS `application` (
                     `Id` int NOT NULL AUTO_INCREMENT,
                     `ProductId` int NOT NULL DEFAULT '0',
                     `Name` varchar(36) NOT NULL,
@@ -127,6 +137,7 @@ mod test {
         );
 
         assert_eq!(create_table.name.as_str(), "application");
+        assert!(create_table.if_not_exists);
         assert_eq!(create_table.columns.len(), 7);
         assert!(create_table.primary_key.is_some());
         assert_eq!(create_table.foreign_keys.len(), 1);
@@ -139,6 +150,7 @@ mod test {
         assert_eq!(
             CreateTable {
                 name: String::from("application"),
+                if_not_exists: true,
                 columns: vec![
                     Column {
                         name: String::from("Id"),
@@ -260,7 +272,7 @@ mod test {
             }
             .as_sql()
             .trim(),
-            "CREATE TABLE `application` (\n  `Id` INT NOT NULL AUTO_INCREMENT,\n  `ProductId` INT NOT NULL DEFAULT '0',\n  `Name` VARCHAR (36) NOT NULL,\n  `SecurityToken` VARCHAR (200) DEFAULT NULL,\n  `RoutingKey` VARCHAR (50) DEFAULT NULL,\n  `AdminPrivilege` TINYINT (1) DEFAULT '0',\n  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`Id`),\n  CONSTRAINT `fk_application_product` FOREIGN KEY (`ProductId`) REFERENCES `product` (`Id`),\n  KEY `fk_application_product` (`ProductId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"
+            "CREATE TABLE IF NOT EXISTS `application` (\n  `Id` INT NOT NULL AUTO_INCREMENT,\n  `ProductId` INT NOT NULL DEFAULT '0',\n  `Name` VARCHAR (36) NOT NULL,\n  `SecurityToken` VARCHAR (200) DEFAULT NULL,\n  `RoutingKey` VARCHAR (50) DEFAULT NULL,\n  `AdminPrivilege` TINYINT (1) DEFAULT '0',\n  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`Id`),\n  CONSTRAINT `fk_application_product` FOREIGN KEY (`ProductId`) REFERENCES `product` (`Id`),\n  KEY `fk_application_product` (`ProductId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"
         );
     }
 }

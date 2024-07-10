@@ -301,13 +301,13 @@ mod test {
                 data_type: DataType::Text { m: Some(42), charset_name: Some(String::from("utf8mb4")), collation_name: Some(String::from("utf8mb4_general_ci")) },
                 nullable: false,
                 default: Some(DefaultValue::Text { value: String::from("Hello, world!") }),
-                on_update: None,
-                auto_increment: false,
+                on_update: Some(OnUpdateValue::CurrentTimestamp { value: Some(6) }),
+                auto_increment: true,
                 comment: Some(String::from("This is a fully loaded column")),
             }
             .as_sql()
             .trim(),
-            "`raw_response_json` TEXT (42) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Hello, world!' COMMENT 'This is a fully loaded column'"
+            "`raw_response_json` TEXT (42) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Hello, world!' ON UPDATE CURRENT_TIMESTAMP (6) AUTO_INCREMENT COMMENT 'This is a fully loaded column'"
         );
     }
 }

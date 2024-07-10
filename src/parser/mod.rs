@@ -4,7 +4,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use statements::CreateTable;
 use std::collections::HashMap;
-use types::{Column, Database, Delete, Index, Insert, Update};
+use types::{Column, Delete, Index, Insert, Update};
 
 pub mod statements;
 pub mod types;
@@ -17,165 +17,165 @@ pub trait Sql {
 #[grammar = "parser/sql.pest"]
 struct MySqlParser;
 
-#[derive(Debug)]
-pub struct MyParser {
-    pub databases: HashMap<String, Database>,
-    pub current_database: Option<Database>,
-}
+// #[derive(Debug)]
+// pub struct MyParser {
+//     pub databases: HashMap<String, Database>,
+//     pub current_database: Option<Database>,
+// }
 
-impl MyParser {
-    pub fn new() -> Self {
-        Self {
-            databases: HashMap::new(),
-            current_database: None,
-        }
-    }
+// impl MyParser {
+//     pub fn new() -> Self {
+//         Self {
+//             databases: HashMap::new(),
+//             current_database: None,
+//         }
+//     }
 
-    // pub fn with_parse(input: &str) -> ExtractResult<Self> {
-    //     let parser = Self::new();
-    //     let parsed_parser = parser.parse_mysqldump(input)?;
-    //     // self.databases.extend(parsed_databases);
+//     // pub fn with_parse(input: &str) -> ExtractResult<Self> {
+//     //     let parser = Self::new();
+//     //     let parsed_parser = parser.parse_mysqldump(input)?;
+//     //     // self.databases.extend(parsed_databases);
 
-    //     Ok(parsed_parser)
-    // }
+//     //     Ok(parsed_parser)
+//     // }
 
-    // pub fn parse(self, input: &str) -> ExtractResult<Self> {
-    //     Ok(self.parse_mysqldump(input)?)
-    // }
+//     // pub fn parse(self, input: &str) -> ExtractResult<Self> {
+//     //     Ok(self.parse_mysqldump(input)?)
+//     // }
 
-    pub fn get_databases(&self) -> Vec<Database> {
-        self.databases.values().cloned().collect()
-    }
+//     pub fn get_databases(&self) -> Vec<Database> {
+//         self.databases.values().cloned().collect()
+//     }
 
-    pub fn set_current_database(mut self, name: &str) -> Self {
-        self.current_database = self.databases.get(name).cloned();
+//     pub fn set_current_database(mut self, name: &str) -> Self {
+//         self.current_database = self.databases.get(name).cloned();
 
-        self
-    }
+//         self
+//     }
 
-    // pub fn parse_mysqldump(mut self, input: &str) -> ExtractResult<Self> {
-    //     let mut parse_result = MySqlParser::parse(Rule::MYSQL_DUMP, input)
-    //         .context("invalid input")
-    //         .unwrap();
-    //     let mysqldump = parse_result
-    //         .next()
-    //         .context("unable to parse input")
-    //         .unwrap();
-    //     let mut current_database: Option<Database> = self.current_database.clone();
+//     // pub fn parse_mysqldump(mut self, input: &str) -> ExtractResult<Self> {
+//     //     let mut parse_result = MySqlParser::parse(Rule::MYSQL_DUMP, input)
+//     //         .context("invalid input")
+//     //         .unwrap();
+//     //     let mysqldump = parse_result
+//     //         .next()
+//     //         .context("unable to parse input")
+//     //         .unwrap();
+//     //     let mut current_database: Option<Database> = self.current_database.clone();
 
-    //     for pair in mysqldump.into_inner() {
-    //         match pair.as_rule() {
-    //             Rule::SQL_STATEMENT => {
-    //                 for inner_pair in pair.into_inner() {
-    //                     match inner_pair.as_rule() {
-    //                         Rule::CREATE_DATABASE => {
-    //                             let database = Database::from(inner_pair);
+//     //     for pair in mysqldump.into_inner() {
+//     //         match pair.as_rule() {
+//     //             Rule::SQL_STATEMENT => {
+//     //                 for inner_pair in pair.into_inner() {
+//     //                     match inner_pair.as_rule() {
+//     //                         Rule::CREATE_DATABASE => {
+//     //                             let database = Database::from(inner_pair);
 
-    //                             if let Some(db) = current_database.take() {
-    //                                 if db.name != database.name {
-    //                                     self.insert_database(db);
-    //                                 }
-    //                             }
+//     //                             if let Some(db) = current_database.take() {
+//     //                                 if db.name != database.name {
+//     //                                     self.insert_database(db);
+//     //                                 }
+//     //                             }
 
-    //                             current_database = Some(database);
-    //                         }
-    //                         Rule::USE_DATABASE => {
-    //                             let name = inner_pair
-    //                                 .into_inner()
-    //                                 .next()
-    //                                 .expect("unable to unwrap use_database name")
-    //                                 .as_str()
-    //                                 .trim_matches('`')
-    //                                 .to_string();
+//     //                             current_database = Some(database);
+//     //                         }
+//     //                         Rule::USE_DATABASE => {
+//     //                             let name = inner_pair
+//     //                                 .into_inner()
+//     //                                 .next()
+//     //                                 .expect("unable to unwrap use_database name")
+//     //                                 .as_str()
+//     //                                 .trim_matches('`')
+//     //                                 .to_string();
 
-    //                             current_database = Some(Database::new(name.to_string()));
-    //                         }
-    //                         Rule::CREATE_TABLE => {
-    //                             if let Some(ref mut db) = current_database {
-    //                                 let table = CreateTable::from(inner_pair);
+//     //                             current_database = Some(Database::new(name.to_string()));
+//     //                         }
+//     //                         Rule::CREATE_TABLE => {
+//     //                             if let Some(ref mut db) = current_database {
+//     //                                 let table = CreateTable::from(inner_pair);
 
-    //                                 db.tables.insert(table.name.clone(), table);
-    //                             }
-    //                         }
-    //                         Rule::ALTER_TABLE => {
-    //                             if let Some(ref mut db) = current_database {
-    //                                 parse_alter_table(inner_pair, db);
-    //                             }
-    //                         }
-    //                         Rule::DROP_TABLE => {
-    //                             if let Some(ref mut db) = current_database {
-    //                                 let table_name = inner_pair
-    //                                     .clone() // Clone the pair here
-    //                                     .into_inner()
-    //                                     .last()
-    //                                     .expect("unable to extract table name")
-    //                                     .as_str()
-    //                                     .trim_matches('`')
-    //                                     .to_string();
+//     //                                 db.tables.insert(table.name.clone(), table);
+//     //                             }
+//     //                         }
+//     //                         Rule::ALTER_TABLE => {
+//     //                             if let Some(ref mut db) = current_database {
+//     //                                 parse_alter_table(inner_pair, db);
+//     //                             }
+//     //                         }
+//     //                         Rule::DROP_TABLE => {
+//     //                             if let Some(ref mut db) = current_database {
+//     //                                 let table_name = inner_pair
+//     //                                     .clone() // Clone the pair here
+//     //                                     .into_inner()
+//     //                                     .last()
+//     //                                     .expect("unable to extract table name")
+//     //                                     .as_str()
+//     //                                     .trim_matches('`')
+//     //                                     .to_string();
 
-    //                                 db.tables.remove(&table_name);
-    //                             }
-    //                         }
-    //                         // Rule::INSERT_STATEMENT => {
-    //                         //     if let Some(ref mut db) = current_database {
-    //                         //         let mut inner = inner_pair.into_inner();
-    //                         //         let table_name = inner
-    //                         //             .next()
-    //                         //             .unwrap()
-    //                         //             .as_str()
-    //                         //             .trim_matches('`')
-    //                         //             .to_string();
+//     //                                 db.tables.remove(&table_name);
+//     //                             }
+//     //                         }
+//     //                         // Rule::INSERT_STATEMENT => {
+//     //                         //     if let Some(ref mut db) = current_database {
+//     //                         //         let mut inner = inner_pair.into_inner();
+//     //                         //         let table_name = inner
+//     //                         //             .next()
+//     //                         //             .unwrap()
+//     //                         //             .as_str()
+//     //                         //             .trim_matches('`')
+//     //                         //             .to_string();
 
-    //                         //         if let Some(table) = db.tables.get_mut(&table_name) {
-    //                         //             table.inserts.push(parse_insert_statement(inner));
-    //                         //         }
-    //                         //     }
-    //                         // }
-    //                         // Rule::UPDATE_STATEMENT => {
-    //                         //     if let Some(ref mut db) = current_database {
-    //                         //         let update = parse_update_statement(inner_pair.into_inner());
+//     //                         //         if let Some(table) = db.tables.get_mut(&table_name) {
+//     //                         //             table.inserts.push(parse_insert_statement(inner));
+//     //                         //         }
+//     //                         //     }
+//     //                         // }
+//     //                         // Rule::UPDATE_STATEMENT => {
+//     //                         //     if let Some(ref mut db) = current_database {
+//     //                         //         let update = parse_update_statement(inner_pair.into_inner());
 
-    //                         //         if let Some(table) = db.tables.get_mut(&update.table_name) {
-    //                         //             table.updates.push(update);
-    //                         //         }
-    //                         //     }
-    //                         // }
-    //                         // Rule::DELETE_STATEMENT => {
-    //                         //     let delete = parse_delete_statement(inner_pair.into_inner());
+//     //                         //         if let Some(table) = db.tables.get_mut(&update.table_name) {
+//     //                         //             table.updates.push(update);
+//     //                         //         }
+//     //                         //     }
+//     //                         // }
+//     //                         // Rule::DELETE_STATEMENT => {
+//     //                         //     let delete = parse_delete_statement(inner_pair.into_inner());
 
-    //                         //     if let Some(ref mut db) = current_database {
-    //                         //         if let Some(table) = db.tables.get_mut(&delete.table_name) {
-    //                         //             table.deletes.push(delete);
-    //                         //         }
-    //                         //     }
-    //                         // }
-    //                         // Rule::set_statement => {
-    //                         //     let set = parse_set_statement(statement);
-    //                         //     db.set_variables.insert(set.variable, set.value);
-    //                         // }
-    //                         // ... existing code ...
-    //                         _ => {}
-    //                     }
-    //                 }
-    //             }
-    //             _ => {}
-    //         }
-    //     }
+//     //                         //     if let Some(ref mut db) = current_database {
+//     //                         //         if let Some(table) = db.tables.get_mut(&delete.table_name) {
+//     //                         //             table.deletes.push(delete);
+//     //                         //         }
+//     //                         //     }
+//     //                         // }
+//     //                         // Rule::set_statement => {
+//     //                         //     let set = parse_set_statement(statement);
+//     //                         //     db.set_variables.insert(set.variable, set.value);
+//     //                         // }
+//     //                         // ... existing code ...
+//     //                         _ => {}
+//     //                     }
+//     //                 }
+//     //             }
+//     //             _ => {}
+//     //         }
+//     //     }
 
-    //     if let Some(ref db) = current_database {
-    //         self.insert_database(db.clone());
-    //     }
+//     //     if let Some(ref db) = current_database {
+//     //         self.insert_database(db.clone());
+//     //     }
 
-    //     // self.databases.extend(databases);
-    //     self.current_database = current_database;
+//     //     // self.databases.extend(databases);
+//     //     self.current_database = current_database;
 
-    //     Ok(self)
-    // }
+//     //     Ok(self)
+//     // }
 
-    fn insert_database(&mut self, db: Database) {
-        self.databases.insert(db.name.clone(), db);
-    }
-}
+//     fn insert_database(&mut self, db: Database) {
+//         self.databases.insert(db.name.clone(), db);
+//     }
+// }
 
 fn parse_insert_statement(mut pairs: pest::iterators::Pairs<Rule>) -> Insert {
     let column_pairs = pairs.next().expect("invalid insert statement").into_inner();
