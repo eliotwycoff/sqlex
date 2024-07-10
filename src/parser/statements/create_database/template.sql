@@ -1,0 +1,1 @@
+CREATE DATABASE{% if if_not_exists %} IF NOT EXISTS{% endif %} `{{ name }}`{% for option in options %} {{ option }}{% endfor %}

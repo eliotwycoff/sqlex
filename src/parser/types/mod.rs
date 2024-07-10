@@ -3,7 +3,6 @@ use tera::Tera;
 
 mod column;
 mod data_type;
-mod database;
 mod database_option;
 mod default_value;
 mod delete;
@@ -18,7 +17,6 @@ mod update;
 
 pub use column::Column;
 pub use data_type::DataType;
-pub use database::Database;
 pub use database_option::DatabaseOption;
 pub use default_value::DefaultValue;
 pub use delete::Delete;
