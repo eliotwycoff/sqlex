@@ -52,6 +52,6 @@ impl Display for InsertValue {
 
 impl Sql for InsertValue {
     fn as_sql(&self) -> String {
-        format!("{}", self)
+        format!("{self}")
     }
 }

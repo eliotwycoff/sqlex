@@ -3,13 +3,13 @@ use pest::iterators::Pair;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, Clone)]
-pub enum Priority {
+pub enum InsertPriority {
     Low,
     Delayed,
     High,
 }
 
-impl From<Pair<'_, Rule>> for Priority {
+impl From<Pair<'_, Rule>> for InsertPriority {
     fn from(pair: Pair<'_, Rule>) -> Self {
         let uppercase = pair.as_str().trim().to_ascii_uppercase();
 
@@ -25,17 +25,17 @@ impl From<Pair<'_, Rule>> for Priority {
     }
 }
 
-impl Display for Priority {
+impl Display for InsertPriority {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Self::Low => write!(f, "LOW_PRIORITY"),
             Self::Delayed => write!(f, "DELAYED"),
-            Self::High => write!(f, "HIGH"),
+            Self::High => write!(f, "HIGH_PRIORITY"),
         }
     }
 }
 
-impl Sql for Priority {
+impl Sql for InsertPriority {
     fn as_sql(&self) -> String {
         format!("{}", self)
     }
