@@ -14,6 +14,7 @@ mod primary_key;
 mod set;
 mod table_option;
 mod update;
+mod where_stmts;
 
 pub use column::Column;
 pub use data_type::DataType;
@@ -28,6 +29,7 @@ pub use primary_key::PrimaryKey;
 pub use set::Set;
 pub use table_option::TableOption;
 pub use update::Update;
+pub use where_stmts::Where;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {

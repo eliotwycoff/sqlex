@@ -6,6 +6,7 @@ use statements::CreateTable;
 use std::collections::HashMap;
 use types::{Column, Delete, Index, Insert, Update};
 
+pub(crate) mod parse_utils;
 pub mod statements;
 pub mod types;
 
