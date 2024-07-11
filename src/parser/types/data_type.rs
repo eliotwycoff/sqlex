@@ -1,9 +1,12 @@
-use crate::parser::{types::TEMPLATES, Rule, Sql};
+use crate::parser::{Rule, Sql};
 use pest::iterators::Pair;
 use serde::Serialize;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use strum_macros::IntoStaticStr;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, IntoStaticStr)]
 #[serde(tag = "type")]
+#[strum(serialize_all = "UPPERCASE")]
 pub enum DataType {
     TinyInt {
         m: Option<u32>,
@@ -411,16 +414,247 @@ impl From<Pair<'_, Rule>> for DataType {
     }
 }
 
+impl Display for DataType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let name: &'static str = self.into();
+
+        match self {
+            Self::TinyInt {
+                m,
+                unsigned,
+                zerofill,
+            }
+            | Self::SmallInt {
+                m,
+                unsigned,
+                zerofill,
+            }
+            | Self::MediumInt {
+                m,
+                unsigned,
+                zerofill,
+            }
+            | Self::Int {
+                m,
+                unsigned,
+                zerofill,
+            }
+            | Self::BigInt {
+                m,
+                unsigned,
+                zerofill,
+            } => write!(
+                f,
+                "{}{}{}{}",
+                name,
+                if let Some(m) = m {
+                    format!(" ({m})")
+                } else {
+                    "".to_string()
+                },
+                if *unsigned { " UNSIGNED" } else { "" },
+                if *zerofill { " ZEROFILL" } else { "" },
+            ),
+            Self::Decimal {
+                m,
+                d,
+                unsigned,
+                zerofill,
+            }
+            | Self::Float {
+                m,
+                d,
+                unsigned,
+                zerofill,
+            }
+            | Self::Double {
+                m,
+                d,
+                unsigned,
+                zerofill,
+            } => write!(
+                f,
+                "{}{}{}{}",
+                name,
+                match (m, d) {
+                    (None, None) => "".to_string(),
+                    (Some(m), None) => format!(" ({m})"),
+                    (Some(m), Some(d)) => format!(" ({m}, {d})"),
+                    (None, Some(_)) => panic!("m must be defined"),
+                },
+                if *unsigned { " UNSIGNED" } else { "" },
+                if *zerofill { " ZEROFILL" } else { "" },
+            ),
+            Self::Bit { m } => write!(
+                f,
+                "{}{}",
+                name,
+                if let Some(m) = m {
+                    format!(" ({m})")
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::Date => write!(f, "{}", name),
+            Self::DateTime { fsp } | Self::Timestamp { fsp } | Self::Time { fsp } => write!(
+                f,
+                "{}{}",
+                name,
+                if let Some(fsp) = fsp {
+                    format!(" ({fsp})")
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::Year { m } => write!(
+                f,
+                "{}{}",
+                name,
+                if let Some(m) = m {
+                    format!(" ({m})")
+                } else {
+                    "".to_string()
+                }
+            ),
+            Self::Char {
+                m,
+                charset_name,
+                collation_name,
+            }
+            | Self::Varchar {
+                m,
+                charset_name,
+                collation_name,
+            } => write!(
+                f,
+                "{}{}{}{}",
+                name,
+                if let Some(m) = m {
+                    format!(" ({m})")
+                } else {
+                    "".to_string()
+                },
+                if let Some(charset_name) = charset_name {
+                    format!(" CHARACTER SET {}", charset_name)
+                } else {
+                    "".to_string()
+                },
+                if let Some(collation_name) = collation_name {
+                    format!(" COLLATE {}", collation_name)
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::Binary { m } => write!(
+                f,
+                "{}{}",
+                name,
+                if let Some(m) = m {
+                    format!(" ({m})")
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::Varbinary { m } => write!(f, "{} ({})", name, m),
+            Self::Blob { m } => write!(
+                f,
+                "{}{}",
+                name,
+                if let Some(m) = m {
+                    format!(" ({m})")
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::TinyBlob | Self::MediumBlob | Self::LongBlob => write!(f, "{}", name),
+            Self::Text {
+                m,
+                charset_name,
+                collation_name,
+            } => write!(
+                f,
+                "{}{}{}{}",
+                name,
+                if let Some(m) = m {
+                    format!(" ({m})")
+                } else {
+                    "".to_string()
+                },
+                if let Some(charset_name) = charset_name {
+                    format!(" CHARACTER SET {}", charset_name)
+                } else {
+                    "".to_string()
+                },
+                if let Some(collation_name) = collation_name {
+                    format!(" COLLATE {}", collation_name)
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::TinyText {
+                charset_name,
+                collation_name,
+            }
+            | Self::MediumText {
+                charset_name,
+                collation_name,
+            }
+            | Self::LongText {
+                charset_name,
+                collation_name,
+            } => write!(
+                f,
+                "{}{}{}",
+                name,
+                if let Some(charset_name) = charset_name {
+                    format!(" CHARACTER SET {}", charset_name)
+                } else {
+                    "".to_string()
+                },
+                if let Some(collation_name) = collation_name {
+                    format!(" COLLATE {}", collation_name)
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::Enum {
+                values,
+                charset_name,
+                collation_name,
+            }
+            | Self::Set {
+                values,
+                charset_name,
+                collation_name,
+            } => write!(
+                f,
+                "{} ({}){}{}",
+                name,
+                values
+                    .iter()
+                    .map(|value| format!("'{value}'"))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+                    .to_string(),
+                if let Some(charset_name) = charset_name {
+                    format!(" CHARACTER SET {}", charset_name)
+                } else {
+                    "".to_string()
+                },
+                if let Some(collation_name) = collation_name {
+                    format!(" COLLATE {}", collation_name)
+                } else {
+                    "".to_string()
+                },
+            ),
+            Self::Json => write!(f, "{}", name),
+        }
+    }
+}
+
 impl Sql for DataType {
     fn as_sql(&self) -> String {
-        TEMPLATES
-            .render(
-                "data_type/template.sql",
-                &tera::Context::from_serialize(self).unwrap(),
-            )
-            .expect("Failed to render data type sql")
-            .trim()
-            .to_string()
+        format!("{self}")
     }
 }
 

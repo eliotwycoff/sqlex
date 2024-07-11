@@ -1,8 +1,6 @@
-use std::fmt::Display;
-
-use pest::iterators::{Pair, Pairs};
-
 use crate::parser::{parse_utils::trim_str, Rule, Sql};
+use pest::iterators::{Pair, Pairs};
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AssignmentValue {
@@ -101,6 +99,7 @@ impl Sql for Assignment {
             .iter()
             .map(|kv| format!("`{}` = {}", kv.key, kv.value))
             .collect::<Vec<String>>();
+
         format!("{}", s.join(", "))
     }
 }
@@ -108,14 +107,15 @@ impl Sql for Assignment {
 impl From<Pair<'_, Rule>> for Assignment {
     fn from(pair: Pair<'_, Rule>) -> Self {
         let mut inner = pair.into_inner();
-
         let mut kv_pairs: Vec<KVPair> = vec![];
+
         while let Some(key_inner) = inner.next() {
             let key = AssignmentKey::from(key_inner);
             let value_inner = inner.next().expect("invalid value");
             let value = AssignmentValue::from(value_inner);
             kv_pairs.push(KVPair::new(key, value));
         }
+
         Assignment { kv_pairs }
     }
 }
@@ -131,17 +131,16 @@ impl From<Pairs<'_, Rule>> for Assignment {
                 });
                 acc
             });
+
         Assignment { kv_pairs: kv_pairs }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use pest::Parser;
-
-    use crate::parser::{MySqlParser, Rule};
-
     use super::*;
+    use crate::parser::{MySqlParser, Rule};
+    use pest::Parser;
 
     #[test]
     fn test_parses_assignment_into_single_kv_pair() {
