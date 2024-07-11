@@ -34,10 +34,9 @@ impl Sql for Where {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::parser::MySqlParser;
     use pest::Parser;
-
-    use super::*;
 
     #[test]
     fn test_with_valid_where_stmt() {

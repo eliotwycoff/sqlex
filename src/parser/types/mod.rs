@@ -1,6 +1,3 @@
-use lazy_static::lazy_static;
-use tera::Tera;
-
 mod assignments;
 mod column;
 mod data_type;
@@ -34,16 +31,3 @@ pub use set::Set;
 pub use table_option::TableOption;
 pub use update::Update;
 pub use where_stmts::Where;
-
-lazy_static! {
-    pub static ref TEMPLATES: Tera = {
-        match Tera::new("src/parser/types/**/*.sql") {
-            Ok(t) => t,
-            Err(e) => {
-                println!("Parsing error: {e}");
-
-                ::std::process::exit(1);
-            }
-        }
-    };
-}
