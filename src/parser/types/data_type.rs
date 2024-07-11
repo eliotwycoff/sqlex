@@ -1,4 +1,4 @@
-use crate::parser::{Rule, Sql};
+use crate::parser::Rule;
 use pest::iterators::Pair;
 use serde::Serialize;
 use std::fmt::{Display, Formatter, Result as FmtResult};
@@ -652,12 +652,6 @@ impl Display for DataType {
     }
 }
 
-impl Sql for DataType {
-    fn as_sql(&self) -> String {
-        format!("{self}")
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -740,8 +734,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TINYINT"
         );
     }
@@ -754,8 +748,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TINYINT (4)"
         );
     }
@@ -768,8 +762,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TINYINT (4) UNSIGNED"
         );
     }
@@ -782,8 +776,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TINYINT (4) UNSIGNED ZEROFILL"
         );
     }
@@ -864,8 +858,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "SMALLINT"
         );
     }
@@ -878,8 +872,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "SMALLINT (4)"
         );
     }
@@ -892,8 +886,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "SMALLINT (4) UNSIGNED"
         );
     }
@@ -906,8 +900,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "SMALLINT (4) UNSIGNED ZEROFILL"
         );
     }
@@ -988,8 +982,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "MEDIUMINT"
         );
     }
@@ -1002,8 +996,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "MEDIUMINT (4)"
         );
     }
@@ -1016,8 +1010,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "MEDIUMINT (4) UNSIGNED"
         );
     }
@@ -1030,8 +1024,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "MEDIUMINT (4) UNSIGNED ZEROFILL"
         );
     }
@@ -1112,8 +1106,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "INT"
         );
     }
@@ -1126,8 +1120,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "INT (4)"
         );
     }
@@ -1140,8 +1134,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "INT (4) UNSIGNED"
         );
     }
@@ -1154,8 +1148,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "INT (4) UNSIGNED ZEROFILL"
         );
     }
@@ -1236,8 +1230,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "BIGINT"
         );
     }
@@ -1250,8 +1244,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "BIGINT (4)"
         );
     }
@@ -1264,8 +1258,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "BIGINT (4) UNSIGNED"
         );
     }
@@ -1278,8 +1272,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "BIGINT (4) UNSIGNED ZEROFILL"
         );
     }
@@ -1383,8 +1377,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DECIMAL"
         );
     }
@@ -1398,8 +1392,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DECIMAL (4)"
         );
     }
@@ -1413,8 +1407,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DECIMAL (4, 6)"
         );
     }
@@ -1428,8 +1422,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DECIMAL (4, 6) UNSIGNED"
         );
     }
@@ -1443,8 +1437,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DECIMAL (4, 6) UNSIGNED ZEROFILL"
         );
     }
@@ -1548,8 +1542,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "FLOAT"
         );
     }
@@ -1563,8 +1557,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "FLOAT (4)"
         );
     }
@@ -1578,8 +1572,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "FLOAT (4, 6)"
         );
     }
@@ -1593,8 +1587,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "FLOAT (4, 6) UNSIGNED"
         );
     }
@@ -1608,8 +1602,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "FLOAT (4, 6) UNSIGNED ZEROFILL"
         );
     }
@@ -1713,8 +1707,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DOUBLE"
         );
     }
@@ -1728,8 +1722,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DOUBLE (4)"
         );
     }
@@ -1743,8 +1737,8 @@ mod test {
                 unsigned: false,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DOUBLE (4, 6)"
         );
     }
@@ -1758,8 +1752,8 @@ mod test {
                 unsigned: true,
                 zerofill: false
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DOUBLE (4, 6) UNSIGNED"
         );
     }
@@ -1773,8 +1767,8 @@ mod test {
                 unsigned: true,
                 zerofill: true
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "DOUBLE (4, 6) UNSIGNED ZEROFILL"
         );
     }
@@ -1807,12 +1801,12 @@ mod test {
 
     #[test]
     fn can_write_bit_default() {
-        assert_eq!(DataType::Bit { m: None }.as_sql().trim(), "BIT");
+        assert_eq!(DataType::Bit { m: None }.to_string().as_str(), "BIT");
     }
 
     #[test]
     fn can_write_bit() {
-        assert_eq!(DataType::Bit { m: Some(4) }.as_sql().trim(), "BIT (4)");
+        assert_eq!(DataType::Bit { m: Some(4) }.to_string().as_str(), "BIT (4)");
     }
 
     #[test]
@@ -1830,7 +1824,7 @@ mod test {
 
     #[test]
     fn can_write_date() {
-        assert_eq!(DataType::Date.as_sql().trim(), "DATE");
+        assert_eq!(DataType::Date.to_string().as_str(), "DATE");
     }
 
     #[test]
@@ -1861,13 +1855,16 @@ mod test {
 
     #[test]
     fn can_write_datetime_default() {
-        assert_eq!(DataType::DateTime { fsp: None }.as_sql().trim(), "DATETIME");
+        assert_eq!(
+            DataType::DateTime { fsp: None }.to_string().as_str(),
+            "DATETIME"
+        );
     }
 
     #[test]
     fn can_write_datetime() {
         assert_eq!(
-            DataType::DateTime { fsp: Some(4) }.as_sql().trim(),
+            DataType::DateTime { fsp: Some(4) }.to_string().as_str(),
             "DATETIME (4)"
         );
     }
@@ -1901,7 +1898,7 @@ mod test {
     #[test]
     fn can_write_timestamp_default() {
         assert_eq!(
-            DataType::Timestamp { fsp: None }.as_sql().trim(),
+            DataType::Timestamp { fsp: None }.to_string().as_str(),
             "TIMESTAMP"
         );
     }
@@ -1909,7 +1906,7 @@ mod test {
     #[test]
     fn can_write_timestamp() {
         assert_eq!(
-            DataType::Timestamp { fsp: Some(4) }.as_sql().trim(),
+            DataType::Timestamp { fsp: Some(4) }.to_string().as_str(),
             "TIMESTAMP (4)"
         );
     }
@@ -1942,12 +1939,15 @@ mod test {
 
     #[test]
     fn can_write_time_default() {
-        assert_eq!(DataType::Time { fsp: None }.as_sql().trim(), "TIME");
+        assert_eq!(DataType::Time { fsp: None }.to_string().as_str(), "TIME");
     }
 
     #[test]
     fn can_write_time() {
-        assert_eq!(DataType::Time { fsp: Some(4) }.as_sql().trim(), "TIME (4)");
+        assert_eq!(
+            DataType::Time { fsp: Some(4) }.to_string().as_str(),
+            "TIME (4)"
+        );
     }
 
     #[test]
@@ -1978,12 +1978,15 @@ mod test {
 
     #[test]
     fn can_write_year_default() {
-        assert_eq!(DataType::Year { m: None }.as_sql().trim(), "YEAR");
+        assert_eq!(DataType::Year { m: None }.to_string().as_str(), "YEAR");
     }
 
     #[test]
     fn can_write_year() {
-        assert_eq!(DataType::Year { m: Some(4) }.as_sql().trim(), "YEAR (4)");
+        assert_eq!(
+            DataType::Year { m: Some(4) }.to_string().as_str(),
+            "YEAR (4)"
+        );
     }
 
     #[test]
@@ -2075,8 +2078,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "CHAR"
         );
     }
@@ -2089,8 +2092,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "CHAR (4)"
         );
     }
@@ -2103,8 +2106,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "CHAR (4) CHARACTER SET utf8mb4"
         );
     }
@@ -2117,8 +2120,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "CHAR (4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -2212,8 +2215,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "VARCHAR"
         );
     }
@@ -2226,8 +2229,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "VARCHAR (4)"
         );
     }
@@ -2240,8 +2243,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "VARCHAR (4) CHARACTER SET utf8mb4"
         );
     }
@@ -2254,8 +2257,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "VARCHAR (4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -2288,13 +2291,13 @@ mod test {
 
     #[test]
     fn can_write_binary_default() {
-        assert_eq!(DataType::Binary { m: None }.as_sql().trim(), "BINARY");
+        assert_eq!(DataType::Binary { m: None }.to_string().as_str(), "BINARY");
     }
 
     #[test]
     fn can_write_binary() {
         assert_eq!(
-            DataType::Binary { m: Some(4) }.as_sql().trim(),
+            DataType::Binary { m: Some(4) }.to_string().as_str(),
             "BINARY (4)"
         );
     }
@@ -2315,7 +2318,7 @@ mod test {
     #[test]
     fn can_write_varbinary() {
         assert_eq!(
-            DataType::Varbinary { m: 4 }.as_sql().trim(),
+            DataType::Varbinary { m: 4 }.to_string().as_str(),
             "VARBINARY (4)"
         );
     }
@@ -2348,12 +2351,15 @@ mod test {
 
     #[test]
     fn can_write_blob_default() {
-        assert_eq!(DataType::Blob { m: None }.as_sql().trim(), "BLOB");
+        assert_eq!(DataType::Blob { m: None }.to_string().as_str(), "BLOB");
     }
 
     #[test]
     fn can_write_blob() {
-        assert_eq!(DataType::Blob { m: Some(4) }.as_sql().trim(), "BLOB (4)");
+        assert_eq!(
+            DataType::Blob { m: Some(4) }.to_string().as_str(),
+            "BLOB (4)"
+        );
     }
 
     #[test]
@@ -2371,7 +2377,7 @@ mod test {
 
     #[test]
     fn can_write_tinyblob() {
-        assert_eq!(DataType::TinyBlob.as_sql().trim(), "TINYBLOB");
+        assert_eq!(DataType::TinyBlob.to_string().as_str(), "TINYBLOB");
     }
 
     #[test]
@@ -2389,7 +2395,7 @@ mod test {
 
     #[test]
     fn can_write_mediumblob() {
-        assert_eq!(DataType::MediumBlob.as_sql().trim(), "MEDIUMBLOB");
+        assert_eq!(DataType::MediumBlob.to_string().as_str(), "MEDIUMBLOB");
     }
 
     #[test]
@@ -2407,7 +2413,7 @@ mod test {
 
     #[test]
     fn can_write_longblob() {
-        assert_eq!(DataType::LongBlob.as_sql().trim(), "LONGBLOB");
+        assert_eq!(DataType::LongBlob.to_string().as_str(), "LONGBLOB");
     }
 
     #[test]
@@ -2499,8 +2505,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TEXT"
         );
     }
@@ -2513,8 +2519,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TEXT (4)"
         );
     }
@@ -2527,8 +2533,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TEXT (4) CHARACTER SET utf8mb4"
         );
     }
@@ -2541,8 +2547,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TEXT (4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -2617,8 +2623,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TINYTEXT"
         );
     }
@@ -2630,8 +2636,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TINYTEXT CHARACTER SET utf8mb4"
         );
     }
@@ -2643,8 +2649,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "TINYTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -2719,8 +2725,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "MEDIUMTEXT"
         );
     }
@@ -2732,8 +2738,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "MEDIUMTEXT CHARACTER SET utf8mb4"
         );
     }
@@ -2745,8 +2751,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -2821,8 +2827,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "LONGTEXT"
         );
     }
@@ -2834,8 +2840,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "LONGTEXT CHARACTER SET utf8mb4"
         );
     }
@@ -2847,8 +2853,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -2942,8 +2948,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "ENUM ('value_one', 'value_two')"
         );
     }
@@ -2956,8 +2962,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "ENUM ('value_one', 'value_two') CHARACTER SET utf8mb4"
         );
     }
@@ -2970,8 +2976,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "ENUM ('value_one', 'value_two') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -3065,8 +3071,8 @@ mod test {
                 charset_name: None,
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "SET ('value_one', 'value_two')"
         );
     }
@@ -3079,8 +3085,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: None
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "SET ('value_one', 'value_two') CHARACTER SET utf8mb4"
         );
     }
@@ -3093,8 +3099,8 @@ mod test {
                 charset_name: Some(String::from("utf8mb4")),
                 collation_name: Some(String::from("utf8mb4_general_ci"))
             }
-            .as_sql()
-            .trim(),
+            .to_string()
+            .as_str(),
             "SET ('value_one', 'value_two') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         );
     }
@@ -3114,6 +3120,6 @@ mod test {
 
     #[test]
     fn can_write_json() {
-        assert_eq!(DataType::Json.as_sql().trim(), "JSON");
+        assert_eq!(DataType::Json.to_string().as_str(), "JSON");
     }
 }

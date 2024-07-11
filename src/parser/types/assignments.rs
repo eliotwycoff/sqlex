@@ -1,6 +1,6 @@
-use crate::parser::{parse_utils::trim_str, Rule, Sql};
+use crate::parser::{parse_utils::trim_str, Rule};
 use pest::iterators::{Pair, Pairs};
-use std::fmt::Display;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AssignmentValue {
@@ -92,15 +92,15 @@ pub struct Assignment {
     pub kv_pairs: Vec<KVPair>,
 }
 
-impl Sql for Assignment {
-    fn as_sql(&self) -> String {
+impl Display for Assignment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let s = self
             .kv_pairs
             .iter()
             .map(|kv| format!("`{}` = {}", kv.key, kv.value))
             .collect::<Vec<String>>();
 
-        format!("{}", s.join(", "))
+        write!(f, "{}", s.join(", "))
     }
 }
 
