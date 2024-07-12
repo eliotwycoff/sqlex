@@ -4,7 +4,7 @@ COMMENT = _{ ("--" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) | ("/*" ~ (!"*/" ~ ANY)* ~ "*/
 NULL = @{ "NULL" }
 BOOLEAN_LITERAL = @{ "TRUE" | "FALSE" | "true" | "false" }
 IDENTIFIER = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
-QUOTED_IDENTIFIER = @{ "`" ~ (!("`" | NEWLINE) ~ ANY)* ~ "`" }
+QUOTED_IDENTIFIER = @{ ("`" ~ (!("`" | NEWLINE) ~ ANY)* ~ "`") | IDENTIFIER }
 STRING_LITERAL = @{ "'" ~ (!"'" ~ ANY | "\\'")* ~ "'" }
 COMMA = _{ "," }
 EQUALS = _{ "=" }

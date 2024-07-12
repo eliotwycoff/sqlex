@@ -146,6 +146,28 @@ mod test {
     }
 
     #[test]
+    fn can_parse_create_table_without_quoted_identifiers() {
+        let create_table = CreateTable::from(
+            MySqlParser::parse(
+                Rule::CREATE_TABLE,
+                "CREATE TABLE IF NOT EXISTS application (
+                    id int NOT NULL AUTO_INCREMENT,
+                    PRIMARY KEY (id),
+                ) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;"
+            )
+            .expect("Invalid input")
+            .next()
+            .expect("Unable to parse input")
+        );
+
+        assert_eq!(create_table.name.as_str(), "application");
+        assert!(create_table.if_not_exists);
+        assert_eq!(create_table.columns.len(), 1);
+        assert!(create_table.primary_key.is_some());
+        assert_eq!(create_table.options.len(), 4);
+    }
+
+    #[test]
     fn can_write_create_table() {
         assert_eq!(
             CreateTable {
